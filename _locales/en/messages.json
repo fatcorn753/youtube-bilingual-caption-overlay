@@ -1,0 +1,50 @@
+{
+  "extName": {
+    "message": "Bilingual Caption Overlay for YouTube"
+  },
+  "extDescription": {
+    "message": "Show YouTube captions plus an on-device Japanese translation in an always-on-top floating window that stays visible on other tabs and apps."
+  },
+  "buttonTitle": {
+    "message": "Caption overlay"
+  },
+  "unsupported": {
+    "message": "This feature requires Chrome 116 or later (Document Picture-in-Picture)."
+  },
+  "waiting": {
+    "message": "Waiting for captions…"
+  },
+  "noCaptions": {
+    "message": "No captions are available for this video."
+  },
+  "sizeDown": {
+    "message": "Smaller text"
+  },
+  "sizeUp": {
+    "message": "Larger text"
+  },
+  "theme": {
+    "message": "Toggle light/dark"
+  },
+  "toggleJa": {
+    "message": "Toggle Japanese translation"
+  },
+  "statusPreparing": {
+    "message": "Preparing translation…"
+  },
+  "statusNoApi": {
+    "message": "The Translator API is not available here (Chrome 138 or later is required)"
+  },
+  "statusUnavailable": {
+    "message": "Translation model is not available"
+  },
+  "statusDownloading": {
+    "message": "Downloading translation model…"
+  },
+  "statusError": {
+    "message": "Translation error: "
+  },
+  "statusNoLang": {
+    "message": "Could not detect the caption language"
+  }
+}

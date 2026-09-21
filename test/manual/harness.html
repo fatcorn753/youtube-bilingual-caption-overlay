@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8" />
+<title>Caption Overlay 動作確認ハーネス</title>
+<!--
+  YouTube を開かずに、拡張の動作を確かめるためのページ。
+
+  使い方(リポジトリのルートで):
+    python3 -m http.server 8000
+    → Chrome で http://localhost:8000/test/manual/harness.html を開く
+
+  何をしているか:
+    - 偽のプレイヤー(#movie_player)に、YouTube と同じ構造の字幕を出す
+    - manifest.json の content_scripts に書かれた順に、ソースを読み込む(本番と同じ)
+    - chrome.* と Translator API は偽物に差し替える(遅延は下の delay で変えられる)
+    - 小窓(Document Picture-in-Picture)の代わりに、画面右下の iframe に描画する
+    - 「字幕オーバーレイ」ボタンは、偽のプレイヤーの右下に出る。押すと小窓が開く
+-->
+<style>
+  body { font: 14px system-ui, sans-serif; margin: 16px; max-width: 760px; }
+  #movie_player { position: relative; width: 640px; height: 200px; background: #333; color: #fff; }
+  .ytp-right-controls { position: absolute; right: 8px; bottom: 8px; display: flex; gap: 4px; }
+  .ytp-right-controls button { min-width: 40px; height: 30px; }
+  .ytp-caption-window-container { position: absolute; left: 0; right: 0; bottom: 48px; text-align: center; }
+  .caption-window { display: inline-block; background: rgba(0,0,0,.7); padding: 2px 6px; }
+  .caption-window:empty { display: none; }
+  .caption-visual-line { display: block; }
+  section { margin-top: 16px; }
+  textarea { width: 100%; height: 64px; }
+  #fakepip { position: fixed; right: 12px; bottom: 12px; width: 640px; height: 300px; border: 2px solid #c0c; background: #fff; }
+</style>
+
+<h1>Caption Overlay 動作確認ハーネス</h1>
+
+<div id="movie_player">
+  <div class="ytp-right-controls">
+    <button class="ytp-button ytp-subtitles-button" aria-pressed="true">CC</button>
+  </div>
+  <div class="ytp-caption-window-container">
+    <div class="caption-window" id="caption-window-1"></div>
+  </div>
+</div>
+
+<section>
+  <h2>字幕を出す</h2>
+  <p>1 行に 1 つの「表示行」を書く(複数行なら折り返された字幕になる)。</p>
+  <textarea id="input">Hello there my friend.</textarea>
+  <p>
+    <label><input type="checkbox" id="rollup" /> 自動生成字幕(ロールアップ表示・句読点なし)</label>
+    <button id="show">字幕を出す</button>
+    <button id="clear">字幕を消す</button>
+  </p>
+  <p>
+    翻訳のモック遅延(ミリ秒): <input type="number" id="delay" value="200" style="width: 6em" />
+    <label><input type="checkbox" id="noapi" /> Translator API を無効にする</label>
+  </p>
+</section>
+
+<iframe id="fakepip" title="小窓の代わり"></iframe>
+
+<script>
+  // ---- 偽物の差し込み(拡張のソースより前に実行する) ----------------------
+  const params = { delay: 200, noApi: false };
+  const translateCalls = [];
+
+  window.chrome = {
+    runtime: { id: 'harness' },
+    i18n: { getMessage: (key) => key }, // 表示はメッセージのキーになる
+    storage: { local: { get: async (defaults) => defaults, set: async () => {} } },
+  };
+
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const mockTranslator = {
+    availability: async () => 'available',
+    create: async () => ({
+      translate: async (text) => {
+        translateCalls.push(text);
+        await sleep(params.delay);
+        return '訳:' + text;
+      },
+    }),
+  };
+  Object.defineProperty(window, 'Translator', { configurable: true, get: () => (params.noApi ? undefined : mockTranslator) });
+  window.LanguageDetector = {
+    create: async () => ({ detect: async (text) => [{ detectedLanguage: /[A-Za-z]/.test(text) ? 'en' : 'ja', confidence: 0.9 }] }),
+  };
+
+  // Document Picture-in-Picture の代わりに、iframe の window を返す
+  const pipFrame = document.getElementById('fakepip');
+  const pipWindow = pipFrame.contentWindow;
+  pipWindow.close = () => pipWindow.dispatchEvent(new Event('pagehide'));
+  // Chrome では window.documentPictureInPicture は読み取り専用なので、あるときはメソッドを上書きする
+  const fakeRequestWindow = async () => pipWindow;
+  if ('documentPictureInPicture' in window) window.documentPictureInPicture.requestWindow = fakeRequestWindow;
+  else window.documentPictureInPicture = { requestWindow: fakeRequestWindow };
+
+  // ---- 字幕の操作 ---------------------------------------------------------
+  const captionWindow = document.getElementById('caption-window-1');
+  function setCaption(lines, rollup = false) {
+    captionWindow.className = 'caption-window' + (rollup ? ' ytp-caption-window-rollup' : '');
+    captionWindow.replaceChildren();
+    for (const text of lines) {
+      const line = document.createElement('span');
+      line.className = 'caption-visual-line';
+      const segment = document.createElement('span');
+      segment.className = 'ytp-caption-segment';
+      segment.textContent = text;
+      line.appendChild(segment);
+      captionWindow.appendChild(line);
+    }
+  }
+
+  document.getElementById('show').onclick = () =>
+    setCaption(document.getElementById('input').value.split('\n').filter(Boolean), document.getElementById('rollup').checked);
+  document.getElementById('clear').onclick = () => setCaption([]);
+  document.getElementById('delay').oninput = (event) => (params.delay = Number(event.target.value) || 0);
+  document.getElementById('noapi').onchange = (event) => (params.noApi = event.target.checked);
+
+  // 自動テストや手動の確認から使えるように公開する
+  window.harness = { setCaption, params, translateCalls, pipWindow, sleep };
+
+  // ---- 拡張のソースを、manifest.json の順に読み込む -----------------------
+  window.harness.ready = (async () => {
+    const manifest = await (await fetch('../../manifest.json')).json();
+    for (const file of manifest.content_scripts[0].js) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = '../../' + file;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error(file + ' を読み込めません'));
+        document.body.appendChild(script);
+      });
+    }
+  })();
+</script>
+</html>

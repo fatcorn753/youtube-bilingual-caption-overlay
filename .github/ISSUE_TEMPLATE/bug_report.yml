@@ -1,0 +1,47 @@
+name: 不具合の報告 / Bug report
+description: 字幕が出ない、訳が出ない、など / Captions or translations do not appear, etc.
+labels: [bug]
+body:
+  - type: input
+    id: chrome
+    attributes:
+      label: Chrome のバージョン / Chrome version
+      description: "chrome://version で確認できます / See chrome://version"
+      placeholder: "138.0.7204.50"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: "macOS 15 / Windows 11 / Linux"
+  - type: dropdown
+    id: captions
+    attributes:
+      label: 字幕の種類 / Caption type
+      options:
+        - 自動生成字幕 / Auto-generated
+        - 手動の字幕 / Manual (uploaded)
+        - わからない / Not sure
+  - type: input
+    id: url
+    attributes:
+      label: 動画の URL(字幕の挙動に関わる場合) / Video URL (if caption behavior is involved)
+  - type: textarea
+    id: status
+    attributes:
+      label: 小窓の下に出るメッセージ / Message at the bottom of the window
+      description: 翻訳が出ないとき、理由が出ます / Shown when the translation does not appear
+  - type: textarea
+    id: what
+    attributes:
+      label: 何が起きましたか / What happened
+      description: 期待した動作と、実際の動作 / Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: console
+    attributes:
+      label: コンソールの出力 / Console output
+      description: "YouTube のタブの開発者ツールで、[Caption Overlay] から始まる行 / Lines starting with [Caption Overlay] in the YouTube tab's DevTools console"
+      render: text

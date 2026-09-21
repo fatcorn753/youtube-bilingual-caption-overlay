@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8" />
+<title>Caption Overlay デモ(README のスクリーンショット用)</title>
+<!--
+  README に載せる画像を、再現できる形で作るためのページ。scripts/screenshots.sh が使う。
+
+  - 表示するのは、この拡張のために書いたオリジナルの例文と日本語訳だけ。
+    実際の動画のフレームや字幕は使わない(著作権に配慮するため)。
+  - 小窓の代わりの iframe をウィンドウいっぱいに広げ、字幕が順に出る様子を自動で流す。
+  - ?theme=dark|light で配色を変えられる。
+
+  使い方: リポジトリのルートで `python3 -m http.server 8000` を起動し、
+          http://localhost:8000/test/manual/demo.html?theme=dark を開く。
+-->
+<style>
+  html, body { margin: 0; height: 100%; background: #e9ecef; }
+  /* 偽のプレイヤーは画面の外に置く(offsetParent を持たせるため、display:none にはしない) */
+  #movie_player { position: fixed; left: -9999px; top: 0; width: 640px; height: 200px; }
+  #fakepip { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; }
+</style>
+
+<div id="movie_player">
+  <div class="ytp-right-controls"><button class="ytp-button ytp-subtitles-button" aria-pressed="true">CC</button></div>
+  <div class="ytp-caption-window-container"><div class="caption-window" id="caption-window-1"></div></div>
+</div>
+<iframe id="fakepip" title="小窓の代わり"></iframe>
+
+<script>
+  const theme = new URLSearchParams(location.search).get('theme') === 'light' ? 'light' : 'dark';
+
+  // このデモのために書いた例文と、その日本語訳
+  const SCRIPT = [
+    ['Welcome back to the channel.', 'チャンネルへおかえりなさい。'],
+    ['Today we look at how captions can follow you across tabs.', '今日は、字幕がタブをまたいでついてくる仕組みを見ていきます。'],
+    ['Each sentence gets its own line, like scrolling lyrics.', '1 文ごとに 1 行になり、歌詞のように流れていきます。'],
+    ['And the translation appears right underneath.', 'そして、すぐ下に翻訳が表示されます。'],
+  ];
+  const UNFINISHED = 'You can switch tabs and keep reading';
+  const dictionary = Object.fromEntries(SCRIPT);
+
+  window.chrome = {
+    runtime: { id: 'demo' },
+    i18n: { getMessage: (key) => ({ extName: 'Bilingual Caption Overlay', waiting: 'Waiting for captions…' })[key] || key },
+    storage: { local: { get: async (defaults) => ({ ...defaults, theme }), set: async () => {} } },
+  };
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const translator = {
+    availability: async () => 'available',
+    create: async () => ({ translate: async (text) => { await sleep(50); return dictionary[text] || text; } }),
+  };
+  Object.defineProperty(window, 'Translator', { configurable: true, get: () => translator });
+  window.LanguageDetector = { create: async () => ({ detect: async () => [{ detectedLanguage: 'en', confidence: 0.9 }] }) };
+
+  const pipWindow = document.getElementById('fakepip').contentWindow;
+  pipWindow.close = () => pipWindow.dispatchEvent(new Event('pagehide'));
+  const fakeRequestWindow = async () => pipWindow;
+  if ('documentPictureInPicture' in window) window.documentPictureInPicture.requestWindow = fakeRequestWindow;
+  else window.documentPictureInPicture = { requestWindow: fakeRequestWindow };
+
+  const captionWindow = document.getElementById('caption-window-1');
+  function showCaption(text) {
+    captionWindow.replaceChildren();
+    const line = document.createElement('span');
+    line.className = 'caption-visual-line';
+    const segment = document.createElement('span');
+    segment.className = 'ytp-caption-segment';
+    segment.textContent = text;
+    line.appendChild(segment);
+    captionWindow.appendChild(line);
+  }
+
+  (async () => {
+    const manifest = await (await fetch('../../manifest.json')).json();
+    for (const file of manifest.content_scripts[0].js) {
+      await new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = '../../' + file;
+        script.onload = resolve;
+        document.body.appendChild(script);
+      });
+    }
+    await sleep(200);
+    document.getElementById('yco-button').click(); // 小窓を開く
+    await sleep(300);
+    for (const [english] of SCRIPT) {
+      showCaption(english);
+      await sleep(400);
+    }
+    showCaption(UNFINISHED); // 最後は、文の途中(まだ訳が付かない)
+    document.title = 'ready';
+  })();
+</script>
+</html>

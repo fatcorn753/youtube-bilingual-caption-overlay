@@ -1,0 +1,22 @@
+{
+  "name": "bilingual-caption-overlay",
+  "version": "2.1.0",
+  "private": true,
+  "description": "YouTube captions in an always-on-top window, one sentence per line, with an on-device Japanese translation under each line.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test",
+    "pack": "sh scripts/pack.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fatcorn753/youtube-bilingual-caption-overlay.git"
+  },
+  "bugs": {
+    "url": "https://github.com/fatcorn753/youtube-bilingual-caption-overlay/issues"
+  },
+  "homepage": "https://github.com/fatcorn753/youtube-bilingual-caption-overlay#readme"
+}

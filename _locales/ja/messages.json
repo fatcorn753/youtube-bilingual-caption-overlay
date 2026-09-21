@@ -1,0 +1,50 @@
+{
+  "extName": {
+    "message": "YouTube 字幕オーバーレイ(日英)"
+  },
+  "extDescription": {
+    "message": "YouTube の字幕と、その日本語訳を最前面の小窓に表示。別のタブやアプリに移っても見続けられます。翻訳は端末内で完結します。"
+  },
+  "buttonTitle": {
+    "message": "字幕オーバーレイ"
+  },
+  "unsupported": {
+    "message": "この機能には Chrome 116 以降(Document Picture-in-Picture)が必要です。"
+  },
+  "waiting": {
+    "message": "字幕を待っています…"
+  },
+  "noCaptions": {
+    "message": "この動画では字幕を利用できません。"
+  },
+  "sizeDown": {
+    "message": "文字を小さく"
+  },
+  "sizeUp": {
+    "message": "文字を大きく"
+  },
+  "theme": {
+    "message": "ライト/ダーク切替"
+  },
+  "toggleJa": {
+    "message": "日本語訳の表示切替"
+  },
+  "statusPreparing": {
+    "message": "翻訳を準備中…"
+  },
+  "statusNoApi": {
+    "message": "この環境では翻訳 API(Translator)が使えません(Chrome 138 以降が必要です)"
+  },
+  "statusUnavailable": {
+    "message": "翻訳モデルを利用できません"
+  },
+  "statusDownloading": {
+    "message": "翻訳モデルをダウンロード中…"
+  },
+  "statusError": {
+    "message": "翻訳エラー: "
+  },
+  "statusNoLang": {
+    "message": "字幕の言語を判定できません"
+  }
+}

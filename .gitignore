@@ -1,0 +1,9 @@
+# ビルド成果物・依存
+dist/
+node_modules/
+*.zip
+
+# OS / エディタ
+.DS_Store
+.idea/
+.vscode/
