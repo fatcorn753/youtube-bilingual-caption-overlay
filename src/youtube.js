@@ -25,9 +25,22 @@
 
   /**
    * 「○○をクリックして設定」という UI ヒントが、字幕と同じ場所に出る。
-   * 字幕本体の id は caption-window-<数字>、ヒントは caption-window-_<英数字> で見分けられる
+   * ヒントは id が caption-window-_<数字> で、画面の上寄せ(ytp-caption-window-top)になる。
+   * id だけでは見分けられない: 手動字幕も caption-window-_<数字> の id を持つ(実際の YouTube で確認)。
+   * 手動字幕は下寄せなので、「id が _ で始まる、かつ上寄せ」をヒントとみなす
    */
   const UI_HINT_ID_PREFIX = 'caption-window-_';
+  const TOP_CLASS = 'ytp-caption-window-top';
+  /**
+   * ヒントの文言(「日本語 (自動生成) をクリックして設定」など)に含まれる語。
+   * 位置と id だけで除外すると、上寄せの手動字幕まで巻き込んで、字幕が 1 つも出なくなる。
+   * 字幕を捨てる誤りのほうが、ヒントが 1 行混ざる誤りより重いので、文言でも確かめて、確実なものだけ除外する
+   */
+  const UI_HINT_TEXT = /クリック|click|clic|klick|cliqu|clicca|설정|点击|點擊|нажм/i;
+  const isUiHint = (win) =>
+    win.id.startsWith(UI_HINT_ID_PREFIX) &&
+    win.classList.contains(TOP_CLASS) &&
+    UI_HINT_TEXT.test(win.textContent ?? '');
 
   const getPlayer = () => document.querySelector(SELECTORS.player);
   const getCcButton = () => getPlayer()?.querySelector(SELECTORS.ccButton) ?? null;
@@ -53,7 +66,7 @@
     const blocks = [];
     let rollup = false;
     for (const win of player.querySelectorAll(SELECTORS.captionWindow)) {
-      if (win.id.startsWith(UI_HINT_ID_PREFIX)) continue;
+      if (isUiHint(win)) continue;
       if (win.classList.contains(ROLLUP_CLASS)) rollup = true;
 
       // YouTube はプレイヤー幅に合わせて字幕を折り返す。小窓では不要なので 1 つにつなぐ

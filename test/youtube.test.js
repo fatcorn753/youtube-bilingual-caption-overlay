@@ -16,10 +16,14 @@ const textNode = (text) => ({ textContent: text });
  * @param {string[]} [spec.lines]    .caption-visual-line ごとのテキスト
  * @param {string[]} [spec.segments] 行がないときの .ytp-caption-segment のテキスト
  */
-function captionWindow({ id = 'caption-window-1', rollup = false, lines = [], segments = [] }) {
+function captionWindow({ id = 'caption-window-1', rollup = false, top = false, lines = [], segments = [] }) {
   return {
     id,
-    classList: { contains: (name) => rollup && name === 'ytp-caption-window-rollup' },
+    textContent: [...lines, ...segments].join(' '),
+    classList: {
+      contains: (name) =>
+        (rollup && name === 'ytp-caption-window-rollup') || (top && name === 'ytp-caption-window-top'),
+    },
     querySelectorAll: (selector) => {
       if (selector === '.caption-visual-line') return lines.map(textNode);
       if (selector === '.ytp-caption-segment') return segments.map(textNode);
@@ -64,10 +68,27 @@ test('ウィンドウが複数あれば、改行でつなぐ', () => {
 
 test('「クリックして設定」の UI ヒントは字幕に含めない', () => {
   const windows = [
-    captionWindow({ id: 'caption-window-_5', lines: ['日本語 (自動生成) をクリックして設定'] }),
+    captionWindow({ id: 'caption-window-_5', top: true, lines: ['日本語 (自動生成) をクリックして設定'] }),
     captionWindow({ id: 'caption-window-1', lines: ['Real caption.'] }),
   ];
   assert.equal(withPage(windows, youtube.readCaptions).text, 'Real caption.');
+});
+
+test('上寄せの手動字幕は、id が caption-window-_N でも字幕として読む(ヒントの文言がなければ除外しない)', () => {
+  const windows = [captionWindow({ id: 'caption-window-_7', top: true, lines: ['Rewrite the rules of the battlefield.'] })];
+  assert.equal(withPage(windows, youtube.readCaptions).text, 'Rewrite the rules of the battlefield.');
+});
+
+test('ヒントの文言は、各国語でも除外する', () => {
+  for (const hint of ['English (auto-generated) Click for settings', 'Haz clic para ver la configuración', '日本語 (自動生成) をクリックして設定']) {
+    const windows = [captionWindow({ id: 'caption-window-_5', top: true, lines: [hint] })];
+    assert.equal(withPage(windows, youtube.readCaptions).text, '', hint);
+  }
+});
+
+test('手動字幕は id が caption-window-_N でも、下寄せなら字幕として読む(実際の YouTube で確認)', () => {
+  const windows = [captionWindow({ id: 'caption-window-_4', lines: ['Also hier sind wir vor den Elefanten.'] })];
+  assert.equal(withPage(windows, youtube.readCaptions).text, 'Also hier sind wir vor den Elefanten.');
 });
 
 test('自動生成字幕(ロールアップ表示)を判別する', () => {
