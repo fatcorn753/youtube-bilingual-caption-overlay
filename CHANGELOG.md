@@ -7,6 +7,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 ### Added
 
 - The translation language can be chosen from a popup on the toolbar icon (Japanese, English, Chinese, Korean, Spanish, French, German). It applies right away to open YouTube tabs: translations already on screen are cleared and redone in the new language. The `JA` button in the window now shows the code of the chosen language.
+- The caption language (what the video's captions are switched to while the window is open) can be chosen in the same popup instead of being fixed to English. The popup also shows whether Chrome can translate the chosen pair and whether a model download is needed. Changing it while the window is open switches the video's captions right away, and closing the window still restores the track you had originally.
 
 ## [2.2.0] - 2026-10-26
 

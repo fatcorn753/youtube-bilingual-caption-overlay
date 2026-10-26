@@ -51,7 +51,7 @@ Prefer the source? `git clone https://github.com/fatcorn753/youtube-bilingual-ca
 | `JA` (shows the target language code, e.g. `KO`) | Show / hide the translation |
 | `◐` | Switch between dark and light theme |
 
-While the window is open, YouTube's own captions are hidden, CC is turned on if needed, and the caption language is switched to **English** when the video has an English track (YouTube may otherwise show Japanese, German, …, leaving nothing to translate). Closing the window restores all of it. Moving on to the next video keeps the window open and prepares the new video the same way.
+While the window is open, YouTube's own captions are hidden, CC is turned on if needed, and the caption language is switched to your chosen **caption language** (English by default; set it in the toolbar popup) when the video has that track (YouTube may otherwise show another language, leaving nothing to translate). Closing the window restores all of it. Moving on to the next video keeps the window open and prepares the new video the same way.
 
 Scroll up to re-read earlier lines; the window stops following new lines until you scroll back to the bottom. The history keeps up to 300 lines and resets when you switch videos.
 

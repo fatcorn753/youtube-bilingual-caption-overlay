@@ -50,11 +50,26 @@
   "captionsUnreadable": {
     "message": "No captions could be read. The video may have none, or YouTube's page may have changed."
   },
+  "popupCaptionLabel": {
+    "message": "Caption language"
+  },
   "popupTargetLabel": {
-    "message": "Translate captions into"
+    "message": "Translate into"
+  },
+  "popupPairAvailable": {
+    "message": "This pair is ready to use."
+  },
+  "popupPairDownload": {
+    "message": "This pair needs a model download the first time (a few minutes)."
+  },
+  "popupPairUnavailable": {
+    "message": "Chrome cannot translate this pair."
+  },
+  "popupPairSame": {
+    "message": "Same language: no translation is shown."
   },
   "popupHint": {
-    "message": "Applies right away to open YouTube tabs. The first use of a language may download a model (Chrome built-in Translator)."
+    "message": "Applies right away to open YouTube tabs. While the window is open, the video's captions are switched to the caption language if the video has that track."
   },
   "statusNeedsGesture": {
     "message": "Downloading this translation model needs a click. Close the window and open it again"

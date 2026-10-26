@@ -40,7 +40,7 @@
   /** 動画の切替中か。古い動画の字幕が DOM に残っている間は、字幕を読まない */
   let navigating = false;
   let navigationTimer = null;
-  /** 字幕の準備(CC をオンにする・言語を英語にする)を、準備ができるまで繰り返す */
+  /** 字幕の準備(CC をオンにする・字幕の言語を切り替える)を、準備ができるまで繰り返す */
   let prepareTimer = null;
   /** 字幕の言語を切り替えたときの、切り替える前のトラック(閉じるときに戻す) */
   let originalTrack = null;
@@ -202,18 +202,27 @@
    */
   function onStoredSettingsChanged(changes) {
     if (!isCurrentInstance()) return;
-    const next = changes.targetLang?.newValue;
-    if (!settingsStore.isSupportedLanguage(next) || next === settings.targetLang) return;
-    settings.targetLang = next;
-    applyTargetLang();
-    overlay?.applySettings(settings);
-    // 前の言語の訳は消して、いま出ている行を新しい言語で訳し直す
-    overlay?.clearTranslations();
-    if (overlay && settings.showJa) retryTranslation();
+    const nextTarget = changes.targetLang?.newValue;
+    if (settingsStore.isSupportedLanguage(nextTarget) && nextTarget !== settings.targetLang) {
+      settings.targetLang = nextTarget;
+      applyLanguages();
+      overlay?.applySettings(settings);
+      // 前の言語の訳は消して、いま出ている行を新しい言語で訳し直す
+      overlay?.clearTranslations();
+      if (overlay && settings.showJa) retryTranslation();
+    }
+    const nextCaption = changes.captionLang?.newValue;
+    if (settingsStore.isSupportedLanguage(nextCaption) && nextCaption !== settings.captionLang) {
+      settings.captionLang = nextCaption;
+      applyLanguages();
+      if (overlay) prepareCaptions(); // 開いている小窓の字幕を、新しい言語のトラックへ切り替える
+      if (overlay && settings.showJa) translator.prewarmAll();
+    }
   }
 
-  function applyTargetLang() {
+  function applyLanguages() {
     translator.setTargetLang(settings.targetLang);
+    translator.setCaptionLang(settings.captionLang);
   }
 
   /** 小窓のボタン操作 */
@@ -245,7 +254,7 @@
     let pipWindow;
     try {
       const pending = window.documentPictureInPicture.requestWindow(constants.PIP_SIZE);
-      // クリックの直後(ユーザー操作が有効なうち)に、最も多い英語→日本語のモデルを用意しておく
+      // クリックの直後(ユーザー操作が有効なうち)に、字幕の言語から翻訳先へのモデルを用意しておく
       if (settings.showJa) {
         translator.begin();
         translator.prewarmAll();
@@ -302,7 +311,7 @@
   }
 
   /**
-   * 字幕の準備をする: CC をオンにし、字幕を英語に切り替える。
+   * 字幕の準備をする: CC をオンにし、字幕を、選ばれた言語(settings.captionLang)に切り替える。
    * 動画が替わった直後は、プレイヤーの準備がまだで、CC ボタンも出ていない。
    * 1 度きりだと取りこぼすので、準備ができるまで繰り返す
    * (これがないと、次の動画へ進むたびに、小窓を開き直すことになる)
@@ -321,10 +330,13 @@
       }
       clearInterval(prepareTimer);
       ccSwitch.ensureOn();
-      const result = await youtube.preferCaptionLanguage(constants.CAPTION_LANG);
+      // 字幕の言語を途中で変えたときは、前に切り替えたトラックではなく、最初の(利用者が選んでいた)トラックに戻す
+      const firstTrack = originalTrack;
+      const result = await youtube.preferCaptionLanguage(settings.captionLang);
       if (!result?.changed) return;
-      if (overlay) originalTrack = result.previous ?? null;
-      else if (result.previous) youtube.restoreCaptionTrack(result.previous); // 待っている間に閉じられた
+      const track = firstTrack ?? result.previous ?? null;
+      if (overlay) originalTrack = track;
+      else if (track) youtube.restoreCaptionTrack(track); // 待っている間に閉じられた
     };
     prepareTimer = setInterval(attempt, constants.TIMING.captionsReadyPollMs);
     attempt();
@@ -387,7 +399,7 @@
 
   settingsStore.load().then((loaded) => {
     settings = loaded;
-    applyTargetLang();
+    applyLanguages();
     overlay?.applySettings(settings);
   });
   chromeApi.onStorageChanged(onStoredSettingsChanged);

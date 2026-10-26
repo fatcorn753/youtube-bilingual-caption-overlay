@@ -349,3 +349,27 @@ test('翻訳先が原語と同じなら、訳さない(空文字)', async () => 
   const { service } = createService({}, { targetLang: 'en' });
   assert.equal(await service.translate('Hello there, world'), '');
 });
+
+// ---- 字幕の言語 -----------------------------------------------------------------
+
+test('判定器がなければ、ASCII だけの字幕は、選ばれた字幕の言語として訳す', async () => {
+  const sources = [];
+  const { service } = createService(
+    { withDetector: false, availability: (pair) => (sources.push(pair.sourceLanguage), 'available') },
+    { captionLang: 'es' },
+  );
+  assert.equal(await service.translate('Hola amigos'), '訳:Hola amigos');
+  assert.deepEqual(sources, ['es']);
+});
+
+test('prewarmAll(): 選ばれた字幕の言語のモデルを用意する。setCaptionLang() で変えられる', async () => {
+  const sources = [];
+  const { service } = createService(
+    { availability: (pair) => (sources.push(pair.sourceLanguage), 'available') },
+    { captionLang: 'de' },
+  );
+  await service.prewarmAll();
+  service.setCaptionLang('fr');
+  await service.prewarmAll();
+  assert.deepEqual(sources, ['de', 'fr']);
+});

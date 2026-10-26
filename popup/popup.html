@@ -33,6 +33,9 @@
         font-weight: 600;
         margin-bottom: 6px;
       }
+      label.second {
+        margin-top: 12px;
+      }
       select {
         width: 100%;
         padding: 6px 8px;
@@ -50,8 +53,11 @@
     </style>
   </head>
   <body>
-    <label for="targetLang" data-i18n="popupTargetLabel"></label>
+    <label for="captionLang" data-i18n="popupCaptionLabel"></label>
+    <select id="captionLang"></select>
+    <label for="targetLang" class="second" data-i18n="popupTargetLabel"></label>
     <select id="targetLang"></select>
+    <p id="pairStatus" role="status"></p>
     <p data-i18n="popupHint"></p>
 
     <script src="../src/constants.js"></script>

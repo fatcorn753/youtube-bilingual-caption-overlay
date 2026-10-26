@@ -18,11 +18,12 @@ const packageJson = readJson('package.json');
 const LOCALES = fs.readdirSync(path.join(ROOT, '_locales'));
 const messages = Object.fromEntries(LOCALES.map((locale) => [locale, readJson(`_locales/${locale}/messages.json`)]));
 
-/** src/ 以下のソースを、すべてつなげた文字列 */
+/** src/ 以下のソースと、ポップアップのスクリプトを、すべてつなげた文字列 */
 const sourceText = fs
   .readdirSync(path.join(ROOT, 'src'))
   .filter((file) => file.endsWith('.js'))
   .map((file) => fs.readFileSync(path.join(ROOT, 'src', file), 'utf8'))
+  .concat(fs.readFileSync(path.join(ROOT, 'popup/popup.js'), 'utf8'))
   .join('\n');
 
 const popupHtml = fs.readFileSync(path.join(ROOT, manifest.action.default_popup), 'utf8');

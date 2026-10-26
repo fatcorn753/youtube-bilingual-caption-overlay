@@ -43,6 +43,7 @@
    * @param {(message: string) => void} options.onStatus 状態メッセージの通知(空文字 = 表示を消す)
    * @param {object} [options.env] Translator / LanguageDetector を持つオブジェクト
    * @param {string} [options.targetLang] 翻訳先の言語。あとから setTargetLang() で変えられる
+   * @param {string} [options.captionLang] 字幕の言語。あとから setCaptionLang() で変えられる
    * @param {number} [options.cacheMax]
    * @param {number} [options.retryMs]
    * @param {{availabilityMs: number, createMs: number, translateMs: number}} [options.timeouts]
@@ -53,12 +54,15 @@
     onStatus,
     env = globalThis,
     targetLang: initialTargetLang = constants.DEFAULT_SETTINGS.targetLang,
+    captionLang: initialCaptionLang = constants.DEFAULT_SETTINGS.captionLang,
     cacheMax = constants.LIMITS.cacheMax,
     retryMs = constants.TIMING.translatorRetryMs,
     timeouts = constants.TIMING.translatorTimeouts,
     now = Date.now,
   }) {
     let targetLang = initialTargetLang;
+    /** 字幕の言語(利用者が選んだもの)。判定器が使えないときの推定と、先読みするモデルの原語に使う */
+    let captionLang = initialCaptionLang;
     /** 翻訳先を変えるたびに増やす。変更前に始まった翻訳の結果を捨てるために使う */
     let generation = 0;
     /** 原語 → Promise<Translator | null> */
@@ -103,8 +107,8 @@
         detectorPromise = null;
       }
       if (lastLang) return lastLang;
-      // 判定手段がなくても、ASCII だけの字幕は英語として扱う
-      if (T.isAscii(text)) return 'en';
+      // 判定手段がなくても、ASCII だけの字幕は、利用者が選んだ字幕の言語として扱う
+      if (T.isAscii(text)) return captionLang;
       reportStatus(t('statusNoLang'));
       return null;
     }
@@ -235,9 +239,9 @@
       if (await getTranslator(sourceLang)) onStatus('');
     }
 
-    /** 英語と、前回ユーザー操作が足りずに用意できなかった言語を、まとめて用意する(クリックの直後に呼ぶ) */
+    /** 字幕の言語と、前回ユーザー操作が足りずに用意できなかった言語を、まとめて用意する(クリックの直後に呼ぶ) */
     async function prewarmAll() {
-      await Promise.all(['en', ...needsGesture].map((lang) => prewarm(lang)));
+      await Promise.all([...new Set([captionLang, ...needsGesture])].map((lang) => prewarm(lang)));
     }
 
     /** 窓を開いたときの初期化。「準備中」を通知し、以後の失敗を表示できる状態に戻す */
@@ -271,12 +275,17 @@
       return true;
     }
 
+    /** 字幕の言語を変える。翻訳器は原語ごとに作るので、捨てる必要はない */
+    function setCaptionLang(language) {
+      captionLang = language;
+    }
+
     /** 直前の言語判定を忘れる(別の動画に替わったとき。前の動画の言語を引きずらない) */
     function resetLanguage() {
       lastLang = null;
     }
 
-    return { translate, prewarm, prewarmAll, begin, retry, resetLanguage, setTargetLang };
+    return { translate, prewarm, prewarmAll, begin, retry, resetLanguage, setTargetLang, setCaptionLang };
   }
 
   YCO.createTranslationService = createTranslationService;

@@ -50,11 +50,26 @@
   "captionsUnreadable": {
     "message": "字幕を読み取れません。動画に字幕がないか、YouTube の構造が変わった可能性があります。"
   },
+  "popupCaptionLabel": {
+    "message": "字幕の言語"
+  },
   "popupTargetLabel": {
-    "message": "字幕の翻訳先"
+    "message": "翻訳先"
+  },
+  "popupPairAvailable": {
+    "message": "この組み合わせはすぐ使えます。"
+  },
+  "popupPairDownload": {
+    "message": "この組み合わせは、初回にモデルのダウンロードが必要です(数分)。"
+  },
+  "popupPairUnavailable": {
+    "message": "Chrome はこの組み合わせを翻訳できません。"
+  },
+  "popupPairSame": {
+    "message": "同じ言語なので、訳は出ません。"
   },
   "popupHint": {
-    "message": "開いている YouTube のタブにすぐ反映されます。初めて使う言語は、モデル(Chrome 内蔵の翻訳)のダウンロードが必要なことがあります。"
+    "message": "開いている YouTube のタブにすぐ反映されます。小窓を開いている間、動画にその言語の字幕があれば、字幕を切り替えます。"
   },
   "statusNeedsGesture": {
     "message": "この言語の翻訳モデルの取得にはクリックが必要です。小窓を閉じて、もう一度開いてください"

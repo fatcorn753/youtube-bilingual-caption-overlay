@@ -28,3 +28,8 @@ test('LANGUAGES: コードが重複せず、既定の翻訳先を含む', () => 
   assert.equal(new Set(codes).size, codes.length);
   assert.ok(codes.includes(constants.DEFAULT_SETTINGS.targetLang));
 });
+
+test('normalize(): 選べない字幕の言語も、既定値に戻す', () => {
+  assert.equal(settingsStore.normalize({ captionLang: 'xx' }).captionLang, constants.DEFAULT_SETTINGS.captionLang);
+  assert.equal(settingsStore.normalize({ captionLang: 'de' }).captionLang, 'de');
+});

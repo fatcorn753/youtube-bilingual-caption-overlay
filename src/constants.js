@@ -16,6 +16,7 @@
       theme: 'dark', // 'dark' | 'light'
       showJa: true, // 訳を表示するか(保存済みの設定との互換のため、名前は showJa のまま)
       targetLang: 'ja', // 翻訳先の言語(LANGUAGES のコード)。ポップアップで選ぶ
+      captionLang: 'en', // 字幕の言語。小窓を開いている間、YouTube の字幕をこの言語に切り替える(トラックがあれば)
     }),
 
     FONT_SIZE: Object.freeze({ min: 14, max: 72, step: 4 }),
@@ -33,13 +34,6 @@
       Object.freeze({ code: 'fr', name: 'Français' }),
       Object.freeze({ code: 'de', name: 'Deutsch' }),
     ]),
-
-    /**
-     * 小窓を開いている間、YouTube の字幕をこの言語に切り替える(閉じたら元に戻す)。
-     * 拡張は画面に出ている字幕をそのまま読むので、字幕が別の言語(自動翻訳など)だと、
-     * 訳す元の文が取れない。その言語のトラックがない動画は、そのままにする
-     */
-    CAPTION_LANG: 'en',
 
     /** 訳の文字サイズ = 字幕の文字サイズ × この値 */
     JA_SCALE: 0.85,

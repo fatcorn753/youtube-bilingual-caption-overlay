@@ -13,7 +13,9 @@
   /** 保存済みの値を、既定値で補い、不正な値(古い版や手で書き換えた値)を既定値に戻す */
   function normalize(stored) {
     const settings = { ...constants.DEFAULT_SETTINGS, ...stored };
-    if (!isSupportedLanguage(settings.targetLang)) settings.targetLang = constants.DEFAULT_SETTINGS.targetLang;
+    for (const key of ['targetLang', 'captionLang']) {
+      if (!isSupportedLanguage(settings[key])) settings[key] = constants.DEFAULT_SETTINGS[key];
+    }
     return settings;
   }
 
