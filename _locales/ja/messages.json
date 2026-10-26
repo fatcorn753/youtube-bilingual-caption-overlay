@@ -3,7 +3,7 @@
     "message": "YouTube 字幕オーバーレイ(日英)"
   },
   "extDescription": {
-    "message": "YouTube の字幕と、その日本語訳を最前面の小窓に表示。別のタブやアプリに移っても見続けられます。翻訳は端末内で完結します。"
+    "message": "YouTube の字幕と、その訳(既定は日本語。ツールバーのアイコンで他の言語も選べます)を最前面の小窓に表示。別のタブやアプリに移っても見続けられます。翻訳は端末内で完結します。"
   },
   "buttonTitle": {
     "message": "字幕オーバーレイ"
@@ -26,8 +26,8 @@
   "theme": {
     "message": "ライト/ダーク切替"
   },
-  "toggleJa": {
-    "message": "日本語訳の表示切替"
+  "toggleTranslation": {
+    "message": "訳の表示切替"
   },
   "statusPreparing": {
     "message": "翻訳を準備中…"
@@ -49,6 +49,12 @@
   },
   "captionsUnreadable": {
     "message": "字幕を読み取れません。動画に字幕がないか、YouTube の構造が変わった可能性があります。"
+  },
+  "popupTargetLabel": {
+    "message": "字幕の翻訳先"
+  },
+  "popupHint": {
+    "message": "開いている YouTube のタブにすぐ反映されます。初めて使う言語は、モデル(Chrome 内蔵の翻訳)のダウンロードが必要なことがあります。"
   },
   "statusNeedsGesture": {
     "message": "この言語の翻訳モデルの取得にはクリックが必要です。小窓を閉じて、もう一度開いてください"

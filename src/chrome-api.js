@@ -46,5 +46,19 @@
     }
   }
 
-  YCO.chromeApi = Object.freeze({ t, isContextValid, storageGet, storageSet });
+  /**
+   * 設定が(ポップアップや別のタブから)変わったときに、listener(changes) を呼ぶ。
+   * changes は { キー: { newValue, oldValue } }
+   */
+  function onStorageChanged(listener) {
+    try {
+      chrome.storage.onChanged.addListener((changes, area) => {
+        if (area === 'local') listener(changes);
+      });
+    } catch (_) {
+      // 拡張のコンテキストが無効
+    }
+  }
+
+  YCO.chromeApi = Object.freeze({ t, isContextValid, storageGet, storageSet, onStorageChanged });
 })(globalThis);

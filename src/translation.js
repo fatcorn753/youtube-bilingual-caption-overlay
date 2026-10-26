@@ -42,7 +42,7 @@
    * @param {(key: string) => string} options.t 翻訳済みメッセージの取得
    * @param {(message: string) => void} options.onStatus 状態メッセージの通知(空文字 = 表示を消す)
    * @param {object} [options.env] Translator / LanguageDetector を持つオブジェクト
-   * @param {string} [options.targetLang]
+   * @param {string} [options.targetLang] 翻訳先の言語。あとから setTargetLang() で変えられる
    * @param {number} [options.cacheMax]
    * @param {number} [options.retryMs]
    * @param {{availabilityMs: number, createMs: number, translateMs: number}} [options.timeouts]
@@ -52,12 +52,15 @@
     t,
     onStatus,
     env = globalThis,
-    targetLang = constants.TARGET_LANG,
+    targetLang: initialTargetLang = constants.DEFAULT_SETTINGS.targetLang,
     cacheMax = constants.LIMITS.cacheMax,
     retryMs = constants.TIMING.translatorRetryMs,
     timeouts = constants.TIMING.translatorTimeouts,
     now = Date.now,
   }) {
+    let targetLang = initialTargetLang;
+    /** 翻訳先を変えるたびに増やす。変更前に始まった翻訳の結果を捨てるために使う */
+    let generation = 0;
     /** 原語 → Promise<Translator | null> */
     const translators = new Map();
     /** 原語 → 準備に失敗した時刻。一定時間は再試行しない */
@@ -160,7 +163,8 @@
         const promise = createTranslator(sourceLang).then((translator) => {
           if (translator) {
             onStatus(''); // 準備できたら「準備中」などの表示を消す
-          } else {
+          } else if (translators.get(sourceLang) === promise) {
+            // 翻訳先が変わって捨てられた古い試みの失敗で、新しい記録を壊さない
             translators.delete(sourceLang);
             failedAt.set(sourceLang, now());
           }
@@ -211,9 +215,12 @@
         noteTranslated(cached);
         return cached;
       }
+      const startedIn = generation;
       try {
         const translation = await translateUncached(text);
         if (translation === null) return null;
+        // 翻訳中に翻訳先が変わった: 古い言語の訳を、キャッシュにも画面にも出さない
+        if (startedIn !== generation) return null;
         remember(text, translation);
         noteTranslated(translation);
         return translation;
@@ -248,12 +255,28 @@
       prewarmAll();
     }
 
+    /**
+     * 翻訳先の言語を変える。翻訳器・キャッシュ・失敗の記録は、前の言語のものなので捨てる。
+     * 呼び出し側は、すでに出ている訳を消して、訳し直すこと
+     * @returns {boolean} 変わったか
+     */
+    function setTargetLang(language) {
+      if (language === targetLang) return false;
+      targetLang = language;
+      generation += 1;
+      cache.clear();
+      translators.clear();
+      failedAt.clear();
+      needsGesture.clear();
+      return true;
+    }
+
     /** 直前の言語判定を忘れる(別の動画に替わったとき。前の動画の言語を引きずらない) */
     function resetLanguage() {
       lastLang = null;
     }
 
-    return { translate, prewarm, prewarmAll, begin, retry, resetLanguage };
+    return { translate, prewarm, prewarmAll, begin, retry, resetLanguage, setTargetLang };
   }
 
   YCO.createTranslationService = createTranslationService;

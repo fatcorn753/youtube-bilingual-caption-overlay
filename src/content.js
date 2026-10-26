@@ -196,6 +196,26 @@
     for (const { slot, text } of overlay?.untranslatedLines() ?? []) enqueueTranslation(slot, text);
   }
 
+  /**
+   * ポップアップなどで保存された設定の変更を、開いている小窓に反映する。
+   * いまは翻訳先の言語だけ(文字サイズなどは小窓のボタンで変える)
+   */
+  function onStoredSettingsChanged(changes) {
+    if (!isCurrentInstance()) return;
+    const next = changes.targetLang?.newValue;
+    if (!settingsStore.isSupportedLanguage(next) || next === settings.targetLang) return;
+    settings.targetLang = next;
+    applyTargetLang();
+    overlay?.applySettings(settings);
+    // 前の言語の訳は消して、いま出ている行を新しい言語で訳し直す
+    overlay?.clearTranslations();
+    if (overlay && settings.showJa) retryTranslation();
+  }
+
+  function applyTargetLang() {
+    translator.setTargetLang(settings.targetLang);
+  }
+
   /** 小窓のボタン操作 */
   function handleAction(action) {
     const { min, max, step } = constants.FONT_SIZE;
@@ -367,8 +387,10 @@
 
   settingsStore.load().then((loaded) => {
     settings = loaded;
+    applyTargetLang();
     overlay?.applySettings(settings);
   });
+  chromeApi.onStorageChanged(onStoredSettingsChanged);
 
   mountButton();
   const buttonTimer = setInterval(() => (isCurrentInstance() ? mountButton() : shutdown()), BUTTON_CHECK_MS);

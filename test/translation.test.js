@@ -305,3 +305,47 @@ test('NotAllowedError は専用のメッセージで通知し、次に開くと�
   assert.ok(created.includes('en') && created.includes('fr'), `英語とフランス語を用意した: ${created}`);
   assert.equal(await service.translate('Bonjour à tous mes amis.'), '訳:Bonjour à tous mes amis.');
 });
+
+// ---- 翻訳先の変更 ----------------------------------------------------------------
+
+test('setTargetLang(): 新しい翻訳先で翻訳器を作り直し、キャッシュも前の言語のものを使わない', async () => {
+  const pairs = [];
+  const { service, calls } = createService(
+    { availability: (pair) => (pairs.push(`${pair.sourceLanguage}>${pair.targetLanguage}`), 'available') },
+    { targetLang: 'ja' },
+  );
+
+  assert.equal(await service.translate('Hello there, world'), '訳:Hello there, world');
+  assert.equal(service.setTargetLang('ja'), false, '同じ言語なら何も変わらない');
+  assert.equal(service.setTargetLang('ko'), true);
+  assert.equal(await service.translate('Hello there, world'), '訳:Hello there, world');
+
+  assert.deepEqual(pairs, ['en>ja', 'en>ko']);
+  assert.equal(calls.create, 2, '言語が変わったので作り直す');
+  assert.equal(calls.translate.length, 2, 'キャッシュの訳を使い回さない');
+});
+
+test('setTargetLang(): 翻訳中に翻訳先が変わったら、古い言語の訳を返さずキャッシュにも入れない', async () => {
+  const { env, calls } = createFakeEnv();
+  let release;
+  const gate = new Promise((resolve) => (release = resolve));
+  const originalCreate = env.Translator.create;
+  env.Translator.create = async (options) => {
+    if (options.targetLanguage === 'ja') await gate; // 古い言語の翻訳器は、遅れて出来上がる
+    return originalCreate(options);
+  };
+  const service = createTranslationService({ env, t: (key) => key, onStatus() {}, targetLang: 'ja' });
+
+  const stale = service.translate('Hello there, world');
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  service.setTargetLang('ko');
+  release();
+  assert.equal(await stale, null, '古い言語の訳は捨てる');
+  assert.equal(await service.translate('Hello there, world'), '訳:Hello there, world');
+  assert.equal(calls.create, 2);
+});
+
+test('翻訳先が原語と同じなら、訳さない(空文字)', async () => {
+  const { service } = createService({}, { targetLang: 'en' });
+  assert.equal(await service.translate('Hello there, world'), '');
+});

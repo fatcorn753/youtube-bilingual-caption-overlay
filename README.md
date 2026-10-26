@@ -12,7 +12,7 @@ A Chrome extension that shows YouTube captions in an **always-on-top floating wi
 <sub>The sentences in these images were written for this project. They are not taken from any video.</sub>
 
 - **One sentence per line.** Captions are grouped into sentences and stacked from top to bottom. The newest line is bright; older lines fade.
-- **Translation under every line.** Translated on your device by Chrome's built-in Translator API. Nothing is sent to any server.
+- **Translation under every line.** Translated on your device by Chrome's built-in Translator API. Nothing is sent to any server. Japanese by default; pick another language (English, Chinese, Korean, Spanish, French, German) from the toolbar icon.
 - **Works with auto-generated captions**, which have no punctuation: lines are split when the speaker pauses.
 - **Stays on top** of other tabs and apps (Document Picture-in-Picture).
 - Adjustable text size, light/dark theme, and a switch to hide the translation.
@@ -48,7 +48,7 @@ Prefer the source? `git clone https://github.com/fatcorn753/youtube-bilingual-ca
 | Button | What it does |
 | --- | --- |
 | `A−` / `A+` | Smaller / larger text |
-| `JA` | Show / hide the translation |
+| `JA` (shows the target language code, e.g. `KO`) | Show / hide the translation |
 | `◐` | Switch between dark and light theme |
 
 While the window is open, YouTube's own captions are hidden, CC is turned on if needed, and the caption language is switched to **English** when the video has an English track (YouTube may otherwise show Japanese, German, …, leaving nothing to translate). Closing the window restores all of it. Moving on to the next video keeps the window open and prepares the new video the same way.

@@ -101,7 +101,7 @@
       }
     }
 
-    /** 設定(文字サイズ・テーマ・日本語訳の表示)を見た目に反映する */
+    /** 設定(文字サイズ・テーマ・訳の表示・翻訳先)を見た目に反映する */
     applySettings(settings) {
       const theme = constants.THEMES[settings.theme] ?? constants.THEMES.dark;
       const root = this.#document.documentElement;
@@ -114,6 +114,7 @@
       root.style.setProperty('--shadow', theme.shadow);
       this.#document.body.classList.toggle('nojp', !settings.showJa);
       this.#jaButton.setAttribute('aria-pressed', String(settings.showJa));
+      this.#jaButton.textContent = settings.targetLang.toUpperCase(); // 翻訳先の言語コード
     }
 
     /** 確定した 1 文を、履歴の末尾に足す。訳を入れる欄(.ja)を返す */
@@ -146,7 +147,7 @@
       });
     }
 
-    /** 行の下に日本語訳を出す。その行がもう消えていれば何もしない */
+    /** 行の下に訳を出す。その行がもう消えていれば何もしない */
     setTranslation(slot, text) {
       if (!slot?.isConnected) return;
       this.#keepBottom(() => {
@@ -159,7 +160,7 @@
       this.#statusElement.textContent = text;
     }
 
-    /** 訳がまだ付いていない行(JA をオンに戻したときに訳す) */
+    /** 訳がまだ付いていない行(訳の表示をオンに戻したときや、翻訳先を変えたときに訳す) */
     untranslatedLines() {
       const lines = [];
       for (const entry of this.#textElement.querySelectorAll('.entry:not(.live)')) {
@@ -167,6 +168,11 @@
         if (slot && !slot.textContent) lines.push({ slot, text: entry.querySelector('.en').textContent });
       }
       return lines;
+    }
+
+    /** 出ている訳をすべて消す(翻訳先が変わったとき。行は残す) */
+    clearTranslations() {
+      for (const slot of this.#textElement.querySelectorAll('.entry .ja')) slot.textContent = '';
     }
 
     /** 履歴を空にする(動画が替わったとき) */
@@ -208,7 +214,7 @@
       };
       addButton('A−', 'sizeDown', 'sizeDown');
       addButton('A+', 'sizeUp', 'sizeUp');
-      this.#jaButton = addButton('JA', 'toggleJa', 'toggleJa');
+      this.#jaButton = addButton('JA', 'toggleTranslation', 'toggleJa');
       addButton('◐', 'theme', 'toggleTheme');
       doc.body.appendChild(controls);
     }

@@ -11,7 +11,7 @@ out="dist/bilingual-caption-overlay-${version}.zip"
 mkdir -p dist
 rm -f "$out"
 # 拡張の実行に必要なものだけを入れる(テスト・ドキュメントは含めない)
-zip -qr "$out" manifest.json src icons _locales
+zip -qr "$out" manifest.json src popup icons _locales
 
 echo "作成しました: $out"
 unzip -l "$out"

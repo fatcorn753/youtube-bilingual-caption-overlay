@@ -14,13 +14,25 @@
     DEFAULT_SETTINGS: Object.freeze({
       fontSize: 28, // 英語の文字サイズ(px)。日本語訳はこの JA_SCALE 倍
       theme: 'dark', // 'dark' | 'light'
-      showJa: true, // 日本語訳を表示するか
+      showJa: true, // 訳を表示するか(保存済みの設定との互換のため、名前は showJa のまま)
+      targetLang: 'ja', // 翻訳先の言語(LANGUAGES のコード)。ポップアップで選ぶ
     }),
 
     FONT_SIZE: Object.freeze({ min: 14, max: 72, step: 4 }),
 
-    /** 翻訳先の言語 */
-    TARGET_LANG: 'ja',
+    /**
+     * 選べる言語。コードは Translator API の言語タグ。名前は、その言語自身の表記
+     * (どの UI 言語でも読めるように、翻訳しない)
+     */
+    LANGUAGES: Object.freeze([
+      Object.freeze({ code: 'ja', name: '日本語' }),
+      Object.freeze({ code: 'en', name: 'English' }),
+      Object.freeze({ code: 'zh', name: '中文(简体)' }),
+      Object.freeze({ code: 'ko', name: '한국어' }),
+      Object.freeze({ code: 'es', name: 'Español' }),
+      Object.freeze({ code: 'fr', name: 'Français' }),
+      Object.freeze({ code: 'de', name: 'Deutsch' }),
+    ]),
 
     /**
      * 小窓を開いている間、YouTube の字幕をこの言語に切り替える(閉じたら元に戻す)。
@@ -29,7 +41,7 @@
      */
     CAPTION_LANG: 'en',
 
-    /** 日本語訳の文字サイズ = 英語の文字サイズ × この値 */
+    /** 訳の文字サイズ = 字幕の文字サイズ × この値 */
     JA_SCALE: 0.85,
 
     /** 小窓の配色。`ja` は日本語訳の色 */

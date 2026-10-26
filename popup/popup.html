@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bilingual Caption Overlay</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --fg: #1f2328;
+        --muted: #656d76;
+        --bg: #ffffff;
+        --line: #d0d7de;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --fg: #e6edf3;
+          --muted: #8d96a0;
+          --bg: #1c2128;
+          --line: #444c56;
+        }
+      }
+      body {
+        width: 260px;
+        margin: 0;
+        padding: 14px 16px 16px;
+        font: 13px/1.5 system-ui, sans-serif;
+        color: var(--fg);
+        background: var(--bg);
+      }
+      label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      select {
+        width: 100%;
+        padding: 6px 8px;
+        font: inherit;
+        color: inherit;
+        background: transparent;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+      }
+      p {
+        margin: 10px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <label for="targetLang" data-i18n="popupTargetLabel"></label>
+    <select id="targetLang"></select>
+    <p data-i18n="popupHint"></p>
+
+    <script src="../src/constants.js"></script>
+    <script src="../src/chrome-api.js"></script>
+    <script src="../src/settings.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

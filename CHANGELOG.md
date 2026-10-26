@@ -2,6 +2,12 @@
 
 All notable changes are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+
+- The translation language can be chosen from a popup on the toolbar icon (Japanese, English, Chinese, Korean, Spanish, French, German). It applies right away to open YouTube tabs: translations already on screen are cleared and redone in the new language. The `JA` button in the window now shows the code of the chosen language.
+
 ## [2.2.0] - 2026-10-26
 
 ### Fixed

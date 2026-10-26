@@ -25,9 +25,12 @@ const sourceText = fs
   .map((file) => fs.readFileSync(path.join(ROOT, 'src', file), 'utf8'))
   .join('\n');
 
-/** ソースが参照している翻訳メッセージのキー: t('key') と、小窓のボタン addButton(label, 'key', action) */
+const popupHtml = fs.readFileSync(path.join(ROOT, manifest.action.default_popup), 'utf8');
+
+/** ソースが参照している翻訳メッセージのキー: t('key')、小窓のボタン addButton(label, 'key', action)、ポップアップの data-i18n="key" */
 function referencedMessageKeys() {
   const keys = new Set();
+  for (const match of popupHtml.matchAll(/data-i18n="([A-Za-z]+)"/g)) keys.add(match[1]);
   for (const match of sourceText.matchAll(/\bt\('([A-Za-z]+)'\)/g)) keys.add(match[1]);
   for (const match of sourceText.matchAll(/addButton\('[^']*', '([A-Za-z]+)'/g)) keys.add(match[1]);
   return keys;
@@ -41,6 +44,15 @@ test('manifest に書かれたスクリプトとアイコンが、すべて存�
   const files = [...manifest.content_scripts.flatMap((entry) => entry.js), ...Object.values(manifest.icons)];
   for (const file of files) {
     assert.ok(fs.existsSync(path.join(ROOT, file)), `${file} がありません`);
+  }
+});
+
+test('ポップアップの HTML が読み込むスクリプトは、すべて存在する', () => {
+  const popupDir = path.dirname(path.join(ROOT, manifest.action.default_popup));
+  const scripts = [...popupHtml.matchAll(/<script src="([^"]+)"/g)].map((match) => match[1]);
+  assert.ok(scripts.length > 0);
+  for (const script of scripts) {
+    assert.ok(fs.existsSync(path.resolve(popupDir, script)), `${script} がありません`);
   }
 });
 
