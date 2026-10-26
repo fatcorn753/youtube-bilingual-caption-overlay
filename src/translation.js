@@ -20,6 +20,18 @@
   const YCO = (root.YCO = root.YCO || {});
   const { constants, text: T } = YCO;
 
+  /**
+   * promise が ms ミリ秒以内に決着しなければ、TimeoutError で失敗させる。
+   * 翻訳 API は、応答しないまま待たされることがある(確認済み)。そのとき、待つ側を巻き込まない
+   */
+  function withTimeout(promise, ms, label) {
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(Object.assign(new Error(`${label} timed out`), { name: 'TimeoutError' })), ms);
+    });
+    return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+  }
+
   /** 例外を「エラー名: メッセージ」の短い 1 行にする */
   function describeError(error) {
     return `${error?.name ?? 'Error'}: ${String(error?.message ?? error).slice(0, 80)}`;
@@ -33,6 +45,7 @@
    * @param {string} [options.targetLang]
    * @param {number} [options.cacheMax]
    * @param {number} [options.retryMs]
+   * @param {{availabilityMs: number, createMs: number, translateMs: number}} [options.timeouts]
    * @param {() => number} [options.now]
    */
   function createTranslationService({
@@ -42,6 +55,7 @@
     targetLang = constants.TARGET_LANG,
     cacheMax = constants.LIMITS.cacheMax,
     retryMs = constants.TIMING.translatorRetryMs,
+    timeouts = constants.TIMING.translatorTimeouts,
     now = Date.now,
   }) {
     /** 原語 → Promise<Translator | null> */
@@ -54,6 +68,12 @@
     let lastLang = null;
     /** 一度でも訳が出たら、その後の一時的な失敗は表示しない */
     let hasTranslated = false;
+    /**
+     * モデルの取得に、ユーザー操作が要るのに得られなかった原語。
+     * 字幕の途中で見つかった英語以外の言語は、クリックの直後に用意できない。
+     * 次に小窓を開くクリックのときに、まとめて用意する
+     */
+    const needsGesture = new Set();
 
     /** 失敗などの理由を通知する。すでに訳が出ているときは邪魔しない */
     function reportStatus(message, detail) {
@@ -71,9 +91,9 @@
       if (text.length < 12 && lastLang) return lastLang;
       try {
         if (env.LanguageDetector) {
-          detectorPromise ??= env.LanguageDetector.create();
+          detectorPromise ??= withTimeout(env.LanguageDetector.create(), timeouts.createMs, 'LanguageDetector.create');
           const detector = await detectorPromise;
-          const [top] = await detector.detect(text);
+          const [top] = await withTimeout(detector.detect(text), timeouts.translateMs, 'LanguageDetector.detect');
           if (top && top.confidence >= 0.6) lastLang = top.detectedLanguage;
         }
       } catch (_) {
@@ -98,7 +118,7 @@
 
       let availability;
       try {
-        availability = await env.Translator.availability(options);
+        availability = await withTimeout(env.Translator.availability(options), timeouts.availabilityMs, 'availability');
       } catch (error) {
         reportStatus(`${t('statusError')}${describeError(error)}`, error);
         return null;
@@ -111,7 +131,7 @@
 
       try {
         // モデルの初回ダウンロードにはユーザー操作が要る。ボタンを押した直後に呼んで満たす
-        return await env.Translator.create({
+        const created = env.Translator.create({
           ...options,
           monitor(monitor) {
             monitor.addEventListener('downloadprogress', (event) => {
@@ -119,8 +139,14 @@
             });
           },
         });
+        return await withTimeout(created, timeouts.createMs, 'create');
       } catch (error) {
-        reportStatus(`${t('statusError')}${describeError(error)}`, error);
+        if (error?.name === 'NotAllowedError') {
+          needsGesture.add(sourceLang);
+          reportStatus(`${t('statusNeedsGesture')} (${sourceLang})`, error);
+        } else {
+          reportStatus(`${t('statusError')}${describeError(error)}`, error);
+        }
         return null;
       }
     }
@@ -153,9 +179,17 @@
       if (sourceLang === targetLang) return ''; // すでに翻訳先の言語
       const translator = await getTranslator(sourceLang);
       if (!translator) return null;
-      // 改行ごとに訳す(Translator は 1 回の呼び出しで改行を保つとは限らない)
-      const lines = await Promise.all(text.split('\n').map((line) => translator.translate(line)));
-      return lines.join('\n');
+      try {
+        // 改行ごとに訳す(Translator は 1 回の呼び出しで改行を保つとは限らない)
+        const lines = await Promise.all(
+          text.split('\n').map((line) => withTimeout(translator.translate(line), timeouts.translateMs, 'translate')),
+        );
+        return lines.join('\n');
+      } catch (error) {
+        // 応答しない・壊れた翻訳器を使い回さない。次の翻訳で作り直す
+        translators.delete(sourceLang);
+        throw error;
+      }
     }
 
     function remember(text, translation) {
@@ -194,9 +228,15 @@
       if (await getTranslator(sourceLang)) onStatus('');
     }
 
+    /** 英語と、前回ユーザー操作が足りずに用意できなかった言語を、まとめて用意する(クリックの直後に呼ぶ) */
+    async function prewarmAll() {
+      await Promise.all(['en', ...needsGesture].map((lang) => prewarm(lang)));
+    }
+
     /** 窓を開いたときの初期化。「準備中」を通知し、以後の失敗を表示できる状態に戻す */
     function begin() {
       hasTranslated = false;
+      lastLang = null;
       onStatus(t('statusPreparing'));
     }
 
@@ -205,10 +245,15 @@
       failedAt.clear();
       translators.clear();
       begin();
-      prewarm('en');
+      prewarmAll();
     }
 
-    return { translate, prewarm, begin, retry };
+    /** 直前の言語判定を忘れる(別の動画に替わったとき。前の動画の言語を引きずらない) */
+    function resetLanguage() {
+      lastLang = null;
+    }
+
+    return { translate, prewarm, prewarmAll, begin, retry, resetLanguage };
   }
 
   YCO.createTranslationService = createTranslationService;

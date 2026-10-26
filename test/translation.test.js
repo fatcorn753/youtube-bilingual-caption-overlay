@@ -116,10 +116,10 @@ test('翻訳モデルが利用できなければ、言語の組を添えて通�
 });
 
 test('翻訳器の作成が例外になったら、エラー名とメッセージを通知する', async () => {
-  const error = Object.assign(new Error('Requires a user gesture'), { name: 'NotAllowedError' });
+  const error = Object.assign(new Error('The model is broken'), { name: 'InvalidStateError' });
   const { service, statuses } = createService({ availability: 'downloadable', createError: error });
   assert.equal(await service.translate('Hello there.'), null);
-  assert.ok(statuses.includes('statusErrorNotAllowedError: Requires a user gesture'));
+  assert.ok(statuses.includes('statusErrorInvalidStateError: The model is broken'));
 });
 
 test('モデルのダウンロード中は、進捗(%)を通知する', async () => {
@@ -219,4 +219,89 @@ test('翻訳器の呼び出しが例外を投げても、translate() は null �
   const service = createTranslationService({ t: (key) => key, onStatus: (m) => statuses.push(m), env });
   assert.equal(await service.translate('Hello there.'), null);
   assert.ok(statuses.some((s) => s.startsWith('statusError')));
+});
+
+// ---- 応答しない翻訳 API ----------------------------------------------------------
+
+const never = () => new Promise(() => {});
+const fastTimeouts = { availabilityMs: 20, createMs: 20, translateMs: 20 };
+
+test('availability が応答しなくても、タイムアウトして null を返し、理由を通知する', async () => {
+  const { service, statuses } = createService({ availability: never }, { timeouts: fastTimeouts });
+  assert.equal(await service.translate('Hello there.'), null);
+  assert.ok(statuses.some((s) => s.startsWith('statusErrorTimeoutError')), `通知された: ${statuses}`);
+});
+
+test('タイムアウトの後も、回復したら訳せる(翻訳の列が詰まらない)', async () => {
+  let hang = true;
+  const { service } = createService(
+    { availability: () => (hang ? never() : 'available') },
+    { timeouts: fastTimeouts, now: () => 0 },
+  );
+  assert.equal(await service.translate('First sentence.'), null);
+  hang = false;
+  service.retry(); // 失敗の記録を捨ててやり直す
+  assert.equal(await service.translate('Second sentence.'), '訳:Second sentence.');
+});
+
+test('翻訳器の translate が応答しなければ、その翻訳器を捨てて作り直す', async () => {
+  const { env, calls } = createFakeEnv();
+  let hang = true;
+  env.Translator.create = async () => {
+    calls.create += 1;
+    return { translate: async (text) => (hang ? never() : `訳:${text}`) };
+  };
+  const service = createTranslationService({ t: (key) => key, onStatus: () => {}, env, timeouts: fastTimeouts });
+
+  assert.equal(await service.translate('First sentence.'), null);
+  hang = false;
+  assert.equal(await service.translate('Second sentence.'), '訳:Second sentence.');
+  assert.equal(calls.create, 2, '壊れた翻訳器を使い回さず、作り直した');
+});
+
+// ---- 言語判定のリセット ----------------------------------------------------------------
+
+test('resetLanguage(): 前の動画の言語を引きずらない', async () => {
+  const askedLanguages = [];
+  const { service } = createService({
+    detect: (text) => (text.startsWith('Bonjour') ? 'fr' : 'en'),
+    availability: ({ sourceLanguage }) => {
+      askedLanguages.push(sourceLanguage);
+      return 'available';
+    },
+  });
+
+  await service.translate('Bonjour à tous mes amis.'); // fr と判定される
+  await service.translate('Yes.'); // 短い文は、直前の言語(fr)を使ってしまう
+  assert.deepEqual(askedLanguages, ['fr'], '短い文は fr として訳そうとする(リセットしない場合)');
+
+  service.resetLanguage(); // 動画が替わった
+  await service.translate('No.'); // 直前の言語がないので、ASCII は英語として扱う
+  assert.deepEqual(askedLanguages, ['fr', 'en']);
+});
+
+// ---- ユーザー操作が要るモデルの取得 --------------------------------------------------
+
+test('NotAllowedError は専用のメッセージで通知し、次に開くときの prewarm 対象に加える', async () => {
+  const gestureError = Object.assign(new Error('Requires a user gesture'), { name: 'NotAllowedError' });
+  const created = [];
+  const { env } = createFakeEnv({ detect: () => 'fr', availability: 'downloadable' });
+  let allowed = false;
+  env.Translator.create = async ({ sourceLanguage }) => {
+    created.push(sourceLanguage);
+    if (!allowed) throw gestureError;
+    return { translate: async (text) => `訳:${text}` };
+  };
+  const statuses = [];
+  const service = createTranslationService({ t: (key) => key, onStatus: (m) => statuses.push(m), env, now: () => 0 });
+
+  assert.equal(await service.translate('Bonjour à tous mes amis.'), null);
+  assert.ok(statuses.includes('statusNeedsGesture (fr)'), `通知された: ${statuses}`);
+
+  allowed = true; // 次に、小窓を開くクリックの直後に prewarmAll() を呼ぶ
+  created.length = 0;
+  service.retry();
+  await service.prewarmAll();
+  assert.ok(created.includes('en') && created.includes('fr'), `英語とフランス語を用意した: ${created}`);
+  assert.equal(await service.translate('Bonjour à tous mes amis.'), '訳:Bonjour à tous mes amis.');
 });

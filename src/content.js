@@ -34,6 +34,8 @@
   let lastRenderKey = null;
   /** 確定した文の翻訳は、1 件ずつ順番に処理する */
   let translationQueue = Promise.resolve();
+  /** 翻訳に失敗した行を、あとでやり直すためのタイマー */
+  let retryTimer = null;
 
   const ccSwitch = new youtube.CcSwitch();
   const history = new CaptionHistory({ onCommit: onLineCommitted });
@@ -63,9 +65,29 @@
       .then(async () => {
         if (!overlay || !slot.isConnected || !settings.showJa) return;
         const translation = await translator.translate(line);
-        if (translation !== null) overlay?.setTranslation(slot, translation);
+        if (translation === null) {
+          scheduleTranslationRetry();
+          return;
+        }
+        overlay?.setTranslation(slot, translation);
+        // 翻訳が回復した: 失敗して訳が抜けていた行を、いまのうちに埋める
+        if (retryTimer) retryUntranslated();
       })
       .catch(() => {});
+  }
+
+  /** 訳のない行を、もう一度訳す */
+  function retryUntranslated() {
+    clearTimeout(retryTimer);
+    retryTimer = null;
+    if (!overlay || !settings.showJa) return;
+    for (const { slot, text } of overlay.untranslatedLines()) enqueueTranslation(slot, text);
+  }
+
+  /** 翻訳に失敗した行は、しばらくしてからやり直す(翻訳側の再試行の猶予が過ぎたころ) */
+  function scheduleTranslationRetry() {
+    if (retryTimer) return;
+    retryTimer = setTimeout(retryUntranslated, constants.TIMING.translatorRetryMs + 1000);
   }
 
   /** 字幕が変わったことを知らせる。マイクロタスクにまとめて描画する */
@@ -110,6 +132,8 @@
 
   /** 履歴を空にして、いま表示中の字幕から数え直す(動画が替わったとき) */
   function resetHistory() {
+    clearTimeout(retryTimer);
+    retryTimer = null;
     history.reset();
     overlay?.clearLines();
     lastRenderKey = null;
@@ -156,7 +180,7 @@
       // クリックの直後(ユーザー操作が有効なうち)に、最も多い英語→日本語のモデルを用意しておく
       if (settings.showJa) {
         translator.begin();
-        translator.prewarm('en');
+        translator.prewarmAll();
       } else {
         statusMessage = '';
       }
@@ -189,6 +213,8 @@
     const closing = overlay;
     overlay = null;
     clearTimeout(stallTimer);
+    clearTimeout(retryTimer);
+    retryTimer = null;
     stopWatchingCaptions?.();
     stopWatchingCaptions = null;
     youtube.setNativeCaptionsHidden(false, INSTANCE);

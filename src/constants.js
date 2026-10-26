@@ -39,6 +39,11 @@
       longStallMs: 8000,
       /** 翻訳の準備に失敗した後、自動で再試行するまでの間隔 */
       translatorRetryMs: 15000,
+      /**
+       * 翻訳 API の応答を待つ上限。応答しない呼び出しで、翻訳の列全体が止まらないようにする。
+       * モデルのダウンロードは長くかかるので、create だけ長い
+       */
+      translatorTimeouts: Object.freeze({ availabilityMs: 8000, createMs: 180000, translateMs: 15000 }),
     }),
 
     LIMITS: Object.freeze({

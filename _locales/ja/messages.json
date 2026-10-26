@@ -46,5 +46,8 @@
   },
   "statusNoLang": {
     "message": "字幕の言語を判定できません"
+  },
+  "statusNeedsGesture": {
+    "message": "この言語の翻訳モデルの取得にはクリックが必要です。小窓を閉じて、もう一度開いてください"
   }
 }

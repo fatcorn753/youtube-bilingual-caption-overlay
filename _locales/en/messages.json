@@ -46,5 +46,8 @@
   },
   "statusNoLang": {
     "message": "Could not detect the caption language"
+  },
+  "statusNeedsGesture": {
+    "message": "Downloading this translation model needs a click. Close the window and open it again"
   }
 }
