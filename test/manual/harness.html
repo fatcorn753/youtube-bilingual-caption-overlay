@@ -63,10 +63,15 @@
   const params = { delay: 200, noApi: false };
   const translateCalls = [];
 
+  window.emitStorageChange = (changes) => (window.storageListeners ?? []).forEach((listener) => listener(changes, 'local'));
   window.chrome = {
     runtime: { id: 'harness' },
     i18n: { getMessage: (key) => key }, // 表示はメッセージのキーになる
-    storage: { local: { get: async (defaults) => defaults, set: async () => {} } },
+    storage: {
+      local: { get: async (defaults) => defaults, set: async () => {} },
+      // ポップアップでの設定変更を真似る: window.emitStorageChange({ targetLang: { newValue: 'ko' } })
+      onChanged: { addListener: (listener) => (window.storageListeners ??= []).push(listener) },
+    },
   };
 
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
