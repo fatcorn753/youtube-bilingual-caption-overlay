@@ -47,6 +47,9 @@
   "statusNoLang": {
     "message": "字幕の言語を判定できません"
   },
+  "captionsUnreadable": {
+    "message": "字幕を読み取れません。動画に字幕がないか、YouTube の構造が変わった可能性があります。"
+  },
   "statusNeedsGesture": {
     "message": "この言語の翻訳モデルの取得にはクリックが必要です。小窓を閉じて、もう一度開いてください"
   }

@@ -54,6 +54,12 @@
        * モデルのダウンロードは長くかかるので、create だけ長い
        */
       translatorTimeouts: Object.freeze({ availabilityMs: 8000, createMs: 180000, translateMs: 15000 }),
+      /**
+       * 字幕の DOM に文字があるのに読めない(または字幕の入れ物がない)状態のまま、
+       * 動画がこの秒数だけ再生され続けたら、読み取れていないと知らせる。
+       * 字幕が出ていないだけ(無音・間奏)の間は数えない
+       */
+      unreadableAfterPlayingSeconds: 20,
     }),
 
     LIMITS: Object.freeze({

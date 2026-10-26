@@ -47,6 +47,9 @@
   "statusNoLang": {
     "message": "Could not detect the caption language"
   },
+  "captionsUnreadable": {
+    "message": "No captions could be read. The video may have none, or YouTube's page may have changed."
+  },
   "statusNeedsGesture": {
     "message": "Downloading this translation model needs a click. Close the window and open it again"
   }

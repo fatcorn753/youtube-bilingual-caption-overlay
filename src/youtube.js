@@ -50,6 +50,17 @@
   const getPlayer = () => document.querySelector(SELECTORS.player);
   const getCcButton = () => getPlayer()?.querySelector(SELECTORS.ccButton) ?? null;
 
+  /** 広告の再生中か(広告の間は字幕がなく、字幕の入れ物も作り直されることがある) */
+  function isAdShowing() {
+    return !!getPlayer()?.classList.contains('ad-showing');
+  }
+
+  /** 動画が再生中か */
+  function isVideoPlaying() {
+    const video = getPlayer()?.querySelector('video');
+    return !!video && !video.paused && !video.ended;
+  }
+
   /** プレイヤーの CC ボタンが押せる状態か(字幕のない動画では隠れる) */
   function isCcAvailable() {
     const button = getCcButton();
@@ -81,6 +92,25 @@
       if (lines.length) blocks.push(T.joinLines(lines));
     }
     return { text: blocks.join('\n'), rollup };
+  }
+
+  /**
+   * 字幕の DOM の状態を調べる(読めない原因が YouTube の構造変更かどうかの見分けに使う)。
+   *   'ok'           字幕を読めた
+   *   'empty'        字幕の入れ物はあるが、いま出ている字幕がない(無音・間奏・字幕のない区間)
+   *   'unreadable'   入れ物に字幕らしい文字があるのに、読めない(セレクタが合わなくなった)
+   *   'no-container' 字幕の入れ物そのものがない
+   */
+  function diagnoseCaptions() {
+    const player = getPlayer();
+    const container = player?.querySelector(SELECTORS.captionContainer);
+    if (!container) return 'no-container';
+    if (readCaptions().text) return 'ok';
+
+    const windows = [...container.querySelectorAll('.caption-window')];
+    const textOutsideWindows = windows.length === 0 && T.collapseWhitespace(container.textContent ?? '');
+    const textInWindows = windows.some((win) => !isUiHint(win) && T.collapseWhitespace(win.textContent ?? ''));
+    return textOutsideWindows || textInWindows ? 'unreadable' : 'empty';
   }
 
   /**
@@ -270,6 +300,9 @@
 
   YCO.youtube = Object.freeze({
     isCcAvailable,
+    isVideoPlaying,
+    isAdShowing,
+    diagnoseCaptions,
     readCaptions,
     watchCaptions,
     CcSwitch,

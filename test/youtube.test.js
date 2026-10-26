@@ -32,9 +32,22 @@ function captionWindow({ id = 'caption-window-1', rollup = false, top = false, l
   };
 }
 
-/** 偽のページを用意して、その中で fn を実行する */
-function withPage(windows, fn) {
-  const player = { querySelectorAll: () => windows };
+/**
+ * 偽のページを用意して、その中で fn を実行する。
+ * @param {object[]|null} windows 字幕のウィンドウ。null ならプレイヤーがない
+ * @param {Function} fn
+ * @param {{container?: boolean, containerText?: string}} [options] 字幕の入れ物の有無と、ウィンドウ外の文字
+ */
+function withPage(windows, fn, { container = true, containerText = '' } = {}) {
+  const containerElement = {
+    textContent: containerText,
+    querySelectorAll: () => windows,
+  };
+  const player = {
+    classList: { contains: () => false },
+    querySelectorAll: () => windows,
+    querySelector: (selector) => (selector === '.ytp-caption-window-container' && container ? containerElement : null),
+  };
   globalThis.document = { querySelector: () => (windows === null ? null : player) };
   try {
     return fn();
@@ -107,6 +120,70 @@ test('字幕が何も出ていなければ、空文字を返す', () => {
 
 test('プレイヤーがなければ、空文字を返す', () => {
   assert.deepEqual(withPage(null, youtube.readCaptions), { text: '', rollup: false });
+});
+
+test('isVideoPlaying: 再生中だけ true', () => {
+  const player = (video) => ({ querySelector: () => video });
+  const run = (video) => {
+    globalThis.document = { querySelector: () => (video === undefined ? null : player(video)) };
+    try {
+      return youtube.isVideoPlaying();
+    } finally {
+      delete globalThis.document;
+    }
+  };
+  assert.equal(run({ paused: false, ended: false }), true);
+  assert.equal(run({ paused: true, ended: false }), false);
+  assert.equal(run({ paused: false, ended: true }), false);
+  assert.equal(run(null), false);
+  assert.equal(run(undefined), false);
+});
+
+// ---- diagnoseCaptions: 読めない原因の見分け ----------------------------------
+
+test('diagnoseCaptions: 字幕を読めたら ok', () => {
+  const windows = [captionWindow({ lines: ['Hello there.'] })];
+  assert.equal(withPage(windows, youtube.diagnoseCaptions), 'ok');
+});
+
+test('diagnoseCaptions: 字幕の入れ物はあるが字幕が出ていないだけなら empty(無音・間奏)', () => {
+  assert.equal(withPage([], youtube.diagnoseCaptions), 'empty');
+});
+
+test('diagnoseCaptions: UI ヒントしかなければ empty', () => {
+  const windows = [captionWindow({ id: 'caption-window-_5', top: true, lines: ['クリックして設定'] })];
+  assert.equal(withPage(windows, youtube.diagnoseCaptions), 'empty');
+});
+
+test('diagnoseCaptions: ウィンドウに文字があるのに行を読めなければ unreadable', () => {
+  // 行・セグメントの class が変わった想定: 文字はあるが、既知の要素では取れない
+  const win = captionWindow({ lines: [], segments: [] });
+  win.textContent = 'Some caption text';
+  assert.equal(withPage([win], youtube.diagnoseCaptions), 'unreadable');
+});
+
+test('diagnoseCaptions: ウィンドウの外に文字があれば unreadable(.caption-window の class が変わった想定)', () => {
+  assert.equal(withPage([], youtube.diagnoseCaptions, { containerText: 'Some caption text' }), 'unreadable');
+});
+
+test('diagnoseCaptions: 字幕の入れ物がなければ no-container', () => {
+  assert.equal(withPage([], youtube.diagnoseCaptions, { container: false }), 'no-container');
+  assert.equal(withPage(null, youtube.diagnoseCaptions), 'no-container');
+});
+
+test('isAdShowing: 広告の再生中だけ true', () => {
+  const run = (adShowing) => {
+    globalThis.document = {
+      querySelector: () => ({ classList: { contains: (name) => adShowing && name === 'ad-showing' } }),
+    };
+    try {
+      return youtube.isAdShowing();
+    } finally {
+      delete globalThis.document;
+    }
+  };
+  assert.equal(run(true), true);
+  assert.equal(run(false), false);
 });
 
 // ---- 字幕のトラックの切り替え(ブリッジとの通信) -----------------------------------

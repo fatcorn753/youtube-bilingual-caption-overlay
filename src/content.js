@@ -22,6 +22,7 @@
   const BUTTON_CHECK_MS = 1500;
   /** 動画が替わったあと、字幕の DOM が作り直されるのを待つ時間 */
   const NAVIGATION_SETTLE_MS = 1200;
+  const WATCHDOG_INTERVAL_MS = 5000;
 
   let settings = { ...constants.DEFAULT_SETTINGS };
   let overlay = null;
@@ -43,6 +44,10 @@
   let prepareTimer = null;
   /** 字幕の言語を切り替えたときの、切り替える前のトラック(閉じるときに戻す) */
   let originalTrack = null;
+  /** 字幕を読めているかの見張り */
+  let watchdogTimer = null;
+  let playingSeconds = 0;
+  let captionsUnreadable = false;
 
   const ccSwitch = new youtube.CcSwitch();
   const history = new CaptionHistory({ onCommit: onLineCommitted });
@@ -122,8 +127,41 @@
   /** 未確定の文(いまの 1 行)を出す。何もなければ案内を出す */
   function showPending() {
     const hasAnything = history.visible || overlay.lineCount;
-    const placeholder = hasAnything ? '' : youtube.isCcAvailable() ? t('waiting') : t('noCaptions');
+    const placeholder = hasAnything && !captionsUnreadable ? '' : emptyPlaceholder();
     overlay.setPending(history.pending, placeholder);
+  }
+
+  /** 字幕がまだ 1 つもないときの案内 */
+  function emptyPlaceholder() {
+    if (captionsUnreadable) return t('captionsUnreadable');
+    return youtube.isCcAvailable() ? t('waiting') : t('noCaptions');
+  }
+
+  /**
+   * 字幕の DOM に文字があるのに読めない状態(または字幕の入れ物がない状態)が続いたら、読み取れていないと知らせる。
+   * YouTube の構造が変わったときに、利用者が「字幕のない動画」と「拡張の不具合」を区別できるようにする。
+   * 字幕が出ていないだけの間(無音・間奏・字幕のない区間)は、不具合とみなさない
+   */
+  function checkCaptionsReadable() {
+    if (!overlay || navigating) return;
+    const state = youtube.diagnoseCaptions();
+    const suspicious = state === 'unreadable' || state === 'no-container';
+    const counting =
+      suspicious && youtube.isCcAvailable() && youtube.isVideoPlaying() && !youtube.isAdShowing();
+    if (!counting) {
+      playingSeconds = 0;
+      if (captionsUnreadable) {
+        captionsUnreadable = false;
+        showPending();
+      }
+      return;
+    }
+    playingSeconds += WATCHDOG_INTERVAL_MS / 1000;
+    if (!captionsUnreadable && playingSeconds >= constants.TIMING.unreadableAfterPlayingSeconds) {
+      captionsUnreadable = true;
+      console.warn(`[Caption Overlay] 字幕を読み取れません(状態: ${state})。YouTube の構造が変わった可能性があります。`);
+      showPending();
+    }
   }
 
   /** 話が止まったら、未確定の文を確定する */
@@ -146,6 +184,8 @@
     translator.resetLanguage(); // 前の動画の言語を引きずらない
     overlay?.clearLines();
     lastRenderKey = null;
+    playingSeconds = 0;
+    captionsUnreadable = false;
   }
 
   // ---- 小窓の開閉 ---------------------------------------------------------
@@ -201,6 +241,8 @@
     history.reset();
     lastRenderKey = null;
     navigating = false;
+    playingSeconds = 0;
+    captionsUnreadable = false;
     overlay = new Overlay(pipWindow, {
       t,
       historyMax: constants.LIMITS.historyMax,
@@ -213,6 +255,7 @@
     youtube.setNativeCaptionsHidden(true, INSTANCE);
     prepareCaptions();
     stopWatchingCaptions = youtube.watchCaptions(scheduleRender);
+    watchdogTimer = setInterval(checkCaptionsReadable, WATCHDOG_INTERVAL_MS);
     render();
     youtube.setButtonPressed(true);
   }
@@ -225,6 +268,7 @@
     clearTimeout(stallTimer);
     clearTimeout(retryTimer);
     clearTimeout(navigationTimer);
+    clearInterval(watchdogTimer);
     clearInterval(prepareTimer);
     retryTimer = null;
     stopWatchingCaptions?.();
