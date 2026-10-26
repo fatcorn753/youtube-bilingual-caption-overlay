@@ -77,7 +77,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the design (written in Japa
 
 - **Captions are read from YouTube's page.** If YouTube changes its markup, the extension may stop working until the selectors in [`src/youtube.js`](src/youtube.js) are updated. YouTube's official caption files can't be used: they are served empty without a proof-of-origin token.
 - **Translation is machine translation** by Chrome's on-device model.
-- Sentence splitting is tuned for English and Japanese. Other languages work, but line breaks may be less accurate.
+- Sentence splitting is tuned for English, German, Spanish, French, Japanese, Chinese and Korean. The abbreviation lists follow the caption language you chose in the popup, so a video whose captions are in another language may split a little early. Auto-generated captions have no punctuation and are split by pauses in any language.
 - The abbreviation list (`Mr.`, `Dr.`, `e.g.`, …) is small. An unlisted abbreviation can split a sentence early.
 
 ## Development

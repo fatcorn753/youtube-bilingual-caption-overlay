@@ -223,6 +223,7 @@
   function applyLanguages() {
     translator.setTargetLang(settings.targetLang);
     translator.setCaptionLang(settings.captionLang);
+    history.setLanguage(settings.captionLang);
   }
 
   /** 小窓のボタン操作 */

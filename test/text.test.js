@@ -7,10 +7,10 @@ const { loadYco } = require('./helpers');
 const { text: T } = loadYco();
 
 /** 文の終わりの位置で切って、文のリストにする */
-function splitSentences(text) {
+function splitSentences(text, language) {
   const sentences = [];
   let start = 0;
-  for (const end of T.findSentenceEnds(text)) {
+  for (const end of T.findSentenceEnds(text, language)) {
     sentences.push(text.slice(start, end).trim());
     start = end;
   }
@@ -78,4 +78,58 @@ test('KANA / isAscii', () => {
   assert.ok(!T.KANA.test('Hello'));
   assert.ok(T.isAscii('Hello, world.'));
   assert.ok(!T.isAscii('Bonjour à tous'));
+});
+
+// ---- 言語ごとの区切り -------------------------------------------------------------
+
+test('findSentenceEnds(de): 略語の後ろでは区切らない', () => {
+  assert.deepEqual(splitSentences('Das ist z.B. ein Test. Dr. Müller kommt bzw. geht.', 'de'), [
+    'Das ist z.B. ein Test.',
+    'Dr. Müller kommt bzw. geht.',
+  ]);
+});
+
+test('findSentenceEnds(de): 数字のあとのピリオド(序数)は、小文字の語や月名が続けば区切らない', () => {
+  assert.deepEqual(splitSentences('Am 3. Mai war es kalt. Wir treffen uns am 12. Dezember wieder.', 'de'), [
+    'Am 3. Mai war es kalt.',
+    'Wir treffen uns am 12. Dezember wieder.',
+  ]);
+  assert.deepEqual(splitSentences('Das ist der 2. gute Tag.', 'de'), ['Das ist der 2. gute Tag.']);
+});
+
+test('findSentenceEnds(de): 数字で終わる文は、そこで区切る(大文字の語が続く・末尾)', () => {
+  assert.deepEqual(splitSentences('Es sind 5. Dann gehen wir.', 'de'), ['Es sind 5.', 'Dann gehen wir.']);
+  assert.deepEqual(splitSentences('Es sind 5.', 'de'), ['Es sind 5.']);
+});
+
+test('findSentenceEnds(en): 序数の規則は英語には適用しない', () => {
+  assert.deepEqual(splitSentences('It costs 5. then it rises.', 'en'), ['It costs 5.', 'then it rises.']);
+});
+
+test('findSentenceEnds(es): 敬称の後ろでは区切らず、¿ ¡ を含む文も文末記号で区切る', () => {
+  assert.deepEqual(splitSentences('El Sr. López llegó. ¡Hola! ¿Cómo estás? Bien.', 'es'), [
+    'El Sr. López llegó.',
+    '¡Hola!',
+    '¿Cómo estás?',
+    'Bien.',
+  ]);
+});
+
+test('findSentenceEnds(fr): 敬称の後ろでは区切らず、記号の前の空白があっても区切る', () => {
+  assert.deepEqual(splitSentences('Mme. Dupont arrive. Quoi ? Oui !', 'fr'), ['Mme. Dupont arrive.', 'Quoi ?', 'Oui !']);
+});
+
+test('findSentenceEnds: 言語ごとの略語は、他の言語の表には入らない', () => {
+  assert.deepEqual(splitSentences('Siehe z.B. oben.', 'en'), ['Siehe z.B.', 'oben.']);
+  assert.deepEqual(splitSentences('See Mme. Dupont.', 'en'), ['See Mme.', 'Dupont.']);
+});
+
+test('findSentenceEnds: 韓国語・中国語は、半角・全角の文末記号で区切る', () => {
+  assert.deepEqual(splitSentences('안녕하세요. 잘 지내세요? 네!', 'ko'), ['안녕하세요.', '잘 지내세요?', '네!']);
+  assert.deepEqual(splitSentences('你好。你好吗?我很好!', 'zh'), ['你好。', '你好吗?', '我很好!']);
+  assert.deepEqual(splitSentences('你好。你好吗？我很好！', 'zh'), ['你好。', '你好吗？', '我很好！']);
+});
+
+test('findSentenceEnds: 表のない言語は、英語の表を使う', () => {
+  assert.deepEqual(splitSentences('Mr. Smith left. Bye.', 'xx'), ['Mr. Smith left.', 'Bye.']);
 });

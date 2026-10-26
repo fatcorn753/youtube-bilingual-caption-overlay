@@ -184,3 +184,18 @@ test('自動生成字幕: 止まらず喋り続けても、長くなったら区
   const all = [...lines, history.pending].join(' ');
   assert.equal(all, words.join(' '));
 });
+
+// ---- 字幕の言語 -----------------------------------------------------------------
+
+test('setLanguage(): その言語の略語の後ろでは、文を確定しない', () => {
+  const { history, lines } = createHistory();
+  history.setLanguage('de');
+  history.update('Das ist z.B. ein Test.');
+  assert.deepEqual(lines, ['Das ist z.B. ein Test.']);
+});
+
+test('setLanguage() をしなければ、英語の表で区切る(z.B. で区切れてしまう)', () => {
+  const { history, lines } = createHistory();
+  history.update('Das ist z.B. ein Test.');
+  assert.deepEqual(lines, ['Das ist z.B.', 'ein Test.']);
+});

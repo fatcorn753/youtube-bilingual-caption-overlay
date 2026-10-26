@@ -41,6 +41,8 @@
     /** 自動生成字幕(ロールアップ表示)か。自動生成字幕は句読点を持たない */
     #rollup = false;
     #lastLine = '';
+    /** 字幕の言語。文の区切り(略語の表など)を言語に合わせる */
+    #language = 'en';
 
     /**
      * @param {object} options
@@ -52,6 +54,11 @@
       this.#onCommit = onCommit;
       this.#limits = limits;
       this.#timing = timing;
+    }
+
+    /** 字幕の言語を変える。次に文を区切るときから効く */
+    setLanguage(language) {
+      this.#language = language;
     }
 
     /** 現在表示中の字幕 */
@@ -155,7 +162,7 @@
       const carryPrefixLength = this.#carryPrefixLength(tail);
 
       let consumed = 0;
-      for (const end of T.findSentenceEnds(combined)) {
+      for (const end of T.findSentenceEnds(combined, this.#language)) {
         this.#emit(combined.slice(consumed, end));
         consumed = end;
       }
