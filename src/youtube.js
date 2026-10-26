@@ -132,10 +132,14 @@
     const id = constants.DOM_IDS.hideNativeStyle;
     const existing = document.getElementById(id);
     if (!hidden) {
-      existing?.remove();
+      // 他の世代が置いた style は消さない(再読み込み直後に、古い世代の後片付けが新しい世代を壊さないように)
+      if (existing?.dataset.owner === owner) existing.remove();
       return;
     }
-    if (existing) return;
+    if (existing) {
+      existing.dataset.owner = owner; // 古い世代の style が残っていたら、持ち主を引き継ぐ
+      return;
+    }
     const style = document.createElement('style');
     style.id = id;
     style.dataset.owner = owner;
