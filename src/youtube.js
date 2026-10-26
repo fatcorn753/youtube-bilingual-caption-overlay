@@ -20,6 +20,11 @@
     rightControls: '.ytp-right-controls',
   });
 
+  /** src/page-bridge.js(MAIN world)と通信するイベント名。両方を揃えること */
+  const BRIDGE_REQUEST = 'yco:caption-request';
+  const BRIDGE_RESPONSE = 'yco:caption-response';
+  const BRIDGE_TIMEOUT_MS = 1500;
+
   /** 自動生成字幕のウィンドウに付く class。手動字幕にはない */
   const ROLLUP_CLASS = 'ytp-caption-window-rollup';
 
@@ -97,6 +102,49 @@
     });
     observer.observe(player, { childList: true, subtree: true, characterData: true });
     return () => observer.disconnect();
+  }
+
+  // ---- 字幕のトラック(言語)の切り替え -------------------------------------
+
+  /**
+   * ページ側のブリッジに要求を送り、応答を待つ。応答がなければ null(ブリッジがない・ページが重い)。
+   * 中身は JSON 文字列で渡す(world をまたぐと、オブジェクトが渡らないことがある)
+   */
+  function callBridge(payload) {
+    return new Promise((resolve) => {
+      const id = Math.random().toString(36).slice(2);
+      const finish = (value) => {
+        clearTimeout(timer);
+        document.removeEventListener(BRIDGE_RESPONSE, onResponse);
+        resolve(value);
+      };
+      const onResponse = (event) => {
+        let message;
+        try {
+          message = JSON.parse(event.detail);
+        } catch (_) {
+          return;
+        }
+        if (message.id === id) finish(message);
+      };
+      const timer = setTimeout(() => finish(null), BRIDGE_TIMEOUT_MS);
+      document.addEventListener(BRIDGE_RESPONSE, onResponse);
+      document.dispatchEvent(new CustomEvent(BRIDGE_REQUEST, { detail: JSON.stringify({ id, ...payload }) }));
+    });
+  }
+
+  /**
+   * 字幕を指定の言語に切り替える。
+   * @returns {Promise<{changed: boolean, previous?: object|null}|null>} 切り替えられなければ null
+   */
+  async function preferCaptionLanguage(languageCode) {
+    const response = await callBridge({ action: 'prefer', languageCode });
+    return response?.ok ? response : null;
+  }
+
+  /** preferCaptionLanguage() で切り替える前のトラックに戻す */
+  function restoreCaptionTrack(track) {
+    return callBridge({ action: 'restore', track });
   }
 
   // ---- CC(字幕)ボタンと、元の字幕の表示 ---------------------------------
@@ -225,6 +273,8 @@
     readCaptions,
     watchCaptions,
     CcSwitch,
+    preferCaptionLanguage,
+    restoreCaptionTrack,
     setNativeCaptionsHidden,
     ensureButton,
     setButtonPressed,

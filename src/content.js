@@ -36,6 +36,13 @@
   let translationQueue = Promise.resolve();
   /** 翻訳に失敗した行を、あとでやり直すためのタイマー */
   let retryTimer = null;
+  /** 動画の切替中か。古い動画の字幕が DOM に残っている間は、字幕を読まない */
+  let navigating = false;
+  let navigationTimer = null;
+  /** 字幕の準備(CC をオンにする・言語を英語にする)を、準備ができるまで繰り返す */
+  let prepareTimer = null;
+  /** 字幕の言語を切り替えたときの、切り替える前のトラック(閉じるときに戻す) */
+  let originalTrack = null;
 
   const ccSwitch = new youtube.CcSwitch();
   const history = new CaptionHistory({ onCommit: onLineCommitted });
@@ -100,7 +107,7 @@
 
   function render() {
     renderScheduled = false;
-    if (!overlay) return;
+    if (!overlay || navigating) return;
 
     const { text, rollup } = youtube.readCaptions();
     const renderKey = text ? `text:${text}` : `none:${youtube.isCcAvailable()}:${overlay.lineCount}`;
@@ -130,14 +137,15 @@
     }, history.stallDelayMs);
   }
 
-  /** 履歴を空にして、いま表示中の字幕から数え直す(動画が替わったとき) */
+  /** 履歴を空にする(動画が替わったとき)。字幕の読み直しは、DOM が落ち着いてから行う */
   function resetHistory() {
+    clearTimeout(stallTimer);
     clearTimeout(retryTimer);
     retryTimer = null;
     history.reset();
+    translator.resetLanguage(); // 前の動画の言語を引きずらない
     overlay?.clearLines();
     lastRenderKey = null;
-    render();
   }
 
   // ---- 小窓の開閉 ---------------------------------------------------------
@@ -192,6 +200,7 @@
 
     history.reset();
     lastRenderKey = null;
+    navigating = false;
     overlay = new Overlay(pipWindow, {
       t,
       historyMax: constants.LIMITS.historyMax,
@@ -202,7 +211,7 @@
     overlay.onClosed(closeOverlay);
 
     youtube.setNativeCaptionsHidden(true, INSTANCE);
-    ccSwitch.ensureOn();
+    prepareCaptions();
     stopWatchingCaptions = youtube.watchCaptions(scheduleRender);
     render();
     youtube.setButtonPressed(true);
@@ -212,15 +221,49 @@
     if (!overlay) return;
     const closing = overlay;
     overlay = null;
+    navigating = false;
     clearTimeout(stallTimer);
     clearTimeout(retryTimer);
+    clearTimeout(navigationTimer);
+    clearInterval(prepareTimer);
     retryTimer = null;
     stopWatchingCaptions?.();
     stopWatchingCaptions = null;
     youtube.setNativeCaptionsHidden(false, INSTANCE);
+    if (originalTrack) youtube.restoreCaptionTrack(originalTrack);
+    originalTrack = null;
     ccSwitch.restore();
     closing.close();
     youtube.setButtonPressed(false);
+  }
+
+  /**
+   * 字幕の準備をする: CC をオンにし、字幕を英語に切り替える。
+   * 動画が替わった直後は、プレイヤーの準備がまだで、CC ボタンも出ていない。
+   * 1 度きりだと取りこぼすので、準備ができるまで繰り返す
+   * (これがないと、次の動画へ進むたびに、小窓を開き直すことになる)
+   */
+  function prepareCaptions() {
+    clearInterval(prepareTimer);
+    const startedAt = Date.now();
+    const attempt = async () => {
+      if (!overlay) {
+        clearInterval(prepareTimer);
+        return;
+      }
+      if (!youtube.isCcAvailable()) {
+        if (Date.now() - startedAt > constants.TIMING.captionsReadyTimeoutMs) clearInterval(prepareTimer);
+        return;
+      }
+      clearInterval(prepareTimer);
+      ccSwitch.ensureOn();
+      const result = await youtube.preferCaptionLanguage(constants.CAPTION_LANG);
+      if (!result?.changed) return;
+      if (overlay) originalTrack = result.previous ?? null;
+      else if (result.previous) youtube.restoreCaptionTrack(result.previous); // 待っている間に閉じられた
+    };
+    prepareTimer = setInterval(attempt, constants.TIMING.captionsReadyPollMs);
+    attempt();
   }
 
   // ---- ページとの連携・後片付け ------------------------------------------
@@ -244,11 +287,18 @@
     if (!isCurrentInstance()) return shutdown();
     mountButton();
     if (!overlay) return;
-    resetHistory(); // 別の動画の字幕が混ざらないよう、履歴は動画ごとに消す
+    // 別の動画の字幕が混ざらないよう、履歴は動画ごとに消す。
+    // 切替の直後は、前の動画の字幕が DOM に残っているので、落ち着くまで読まない
+    navigating = true;
+    originalTrack = null; // 前の動画のトラックは、新しい動画では意味がない
+    clearInterval(prepareTimer);
+    resetHistory();
     // 小窓は開いたまま、新しい動画の字幕へ追従する
-    setTimeout(() => {
+    clearTimeout(navigationTimer);
+    navigationTimer = setTimeout(() => {
       if (!overlay) return;
-      ccSwitch.ensureOn();
+      navigating = false;
+      prepareCaptions();
       stopWatchingCaptions?.();
       stopWatchingCaptions = youtube.watchCaptions(scheduleRender);
       lastRenderKey = null;

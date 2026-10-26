@@ -108,3 +108,46 @@ test('字幕が何も出ていなければ、空文字を返す', () => {
 test('プレイヤーがなければ、空文字を返す', () => {
   assert.deepEqual(withPage(null, youtube.readCaptions), { text: '', rollup: false });
 });
+
+// ---- 字幕のトラックの切り替え(ブリッジとの通信) -----------------------------------
+
+/** 偽の document で、ブリッジの代わりに応答を返す */
+function withBridge(respond, fn) {
+  const fakeDocument = new EventTarget();
+  fakeDocument.addEventListener('yco:caption-request', (event) => {
+    const request = JSON.parse(event.detail);
+    const response = respond(request);
+    fakeDocument.dispatchEvent(new CustomEvent('yco:caption-response', { detail: JSON.stringify({ id: request.id, ...response }) }));
+  });
+  globalThis.document = fakeDocument;
+  return Promise.resolve(fn()).finally(() => delete globalThis.document);
+}
+
+test('preferCaptionLanguage: ブリッジの応答を返す', async () => {
+  const previous = { languageCode: 'de' };
+  const result = await withBridge(
+    (request) => ({ ok: true, changed: true, previous, echoed: request.languageCode }),
+    () => youtube.preferCaptionLanguage('en'),
+  );
+  assert.equal(result.changed, true);
+  assert.deepEqual(result.previous, previous);
+  assert.equal(result.echoed, 'en');
+});
+
+test('preferCaptionLanguage: ブリッジが失敗を返したら null', async () => {
+  const result = await withBridge(() => ({ ok: false, reason: 'no-player' }), () => youtube.preferCaptionLanguage('en'));
+  assert.equal(result, null);
+});
+
+test('restoreCaptionTrack: 戻すトラックを送る', async () => {
+  let received = null;
+  await withBridge(
+    (request) => {
+      received = request;
+      return { ok: true };
+    },
+    () => youtube.restoreCaptionTrack({ languageCode: 'de' }),
+  );
+  assert.equal(received.action, 'restore');
+  assert.equal(received.track.languageCode, 'de');
+});

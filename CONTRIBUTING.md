@@ -28,6 +28,7 @@ Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) first. It explains what each f
 | `src/caption-history.js` | Groups captions into sentences (pure logic, well tested) |
 | `src/translation.js` | Chrome Translator API wrapper (testable with a fake environment) |
 | `src/youtube.js` | Everything that touches YouTube's page — start here when YouTube changes its markup |
+| `src/page-bridge.js` | Runs in the page's own JS world (MAIN) to switch the caption track; talks to `youtube.js` via CustomEvents |
 | `src/overlay.js` | The floating window's UI |
 | `src/content.js` | Entry point that wires the modules together |
 | `test/` | Unit tests (`*.test.js`) and a manual harness (`manual/harness.html`) |
