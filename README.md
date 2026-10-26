@@ -17,6 +17,17 @@ A Chrome extension that shows YouTube captions in an **always-on-top floating wi
 - **Stays on top** of other tabs and apps (Document Picture-in-Picture).
 - Adjustable text size, light/dark theme, and a switch to hide the translation.
 
+## Why I built it, and how
+
+I think the easiest and most memorable way to learn a new language is to read the captions of channels you already watch — in the language you want to learn — next to a translation, as one set.
+
+I let AI (Claude Code) write and debug the code. My part is to try it on real YouTube videos and point out what is wrong with the UI and UX. Two changes came from using it that way:
+
+- **Reopening the window for every new video was a chore** → the window now stays open and follows the next video automatically (v2.2.0).
+- **The translation was Japanese only, and captions were assumed to be English** → the translation language and the caption language can now be chosen in the toolbar popup (v2.3.0).
+
+I have not measured whether it actually improves learning.
+
 ## Requirements
 
 | Feature | Needs |
