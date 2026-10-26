@@ -2,6 +2,24 @@
 
 All notable changes are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+
+- The window no longer has to be closed and reopened for every next video. After a video change, CC was switched on only once, before the new player was ready; now the extension waits (up to 20 seconds) until the player is ready and then prepares captions.
+- Manual (uploaded) captions were ignored when YouTube gave their window an id like `caption-window-_4`, because that id pattern was treated as a UI hint. Only top-aligned windows with that id whose text also looks like the hint ("click for settings" in several languages) are treated as hints now, so top-aligned manual captions are no longer dropped. (Found by running against the real YouTube page.)
+- A translation API call that never answers no longer stalls every later translation. Each call has a timeout, and a stuck translator is discarded and recreated.
+- Lines whose translation failed are retried automatically once translation recovers, instead of staying untranslated.
+- The detected caption language is forgotten when the video changes, so one video's language is no longer applied to the next.
+- Right after switching videos, captions left over from the previous video are no longer added to the new video's history.
+- A reloaded extension's old script no longer removes the new script's style that hides YouTube's own captions.
+
+### Added
+
+- While the window is open, YouTube's caption language is switched to English when the video has an English track (manual captions are preferred over auto-generated ones), and restored when the window closes. Previously the window showed whatever language YouTube had selected — for example Japanese or German — so there was nothing to translate.
+- If YouTube's caption markup changes so that captions are visible on the page but cannot be read (or the caption container is gone) for 20 seconds of playback, the window says so instead of waiting silently. Silent stretches (instrumental breaks, parts without captions) and ads are not counted, so it does not raise false alarms.
+- A translation model that needs a click to download (for a language other than English) is now prepared the next time the window is opened, and the window explains what to do.
+
 ## [2.1.0] - 2026-09-21
 
 ### Changed
