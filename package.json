@@ -1,6 +1,6 @@
 {
   "name": "bilingual-caption-overlay",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "private": true,
   "description": "YouTube captions in an always-on-top window, one sentence per line, with an on-device Japanese translation under each line.",
   "license": "MIT",

@@ -2,7 +2,7 @@
 
 All notable changes are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [2.2.0] - 2026-10-26
 
 ### Fixed
 
@@ -47,3 +47,4 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - After the extension is reloaded, the old script in an open tab shuts itself down instead of throwing `Extension context invalidated`.
 
 [2.1.0]: https://github.com/fatcorn753/youtube-bilingual-caption-overlay/releases/tag/v2.1.0
+[2.2.0]: https://github.com/fatcorn753/youtube-bilingual-caption-overlay/releases/tag/v2.2.0
