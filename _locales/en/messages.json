@@ -3,7 +3,7 @@
     "message": "Bilingual Caption Overlay for YouTube"
   },
   "extDescription": {
-    "message": "YouTube captions plus an on-device translation (Japanese by default) in an always-on-top window that stays over other tabs and apps."
+    "message": "YouTube captions plus an on-device translation in a language you choose, in an always-on-top window that stays over other tabs."
   },
   "buttonTitle": {
     "message": "Caption overlay"
