@@ -39,7 +39,9 @@ Other browsers (Firefox, Safari) are not supported.
 
 ## Install
 
-The extension is not on the Chrome Web Store yet. Install it from a release:
+Install it from the [Chrome Web Store](https://chromewebstore.google.com/detail/bilingual-caption-overlay/fbkiogggnhmaadaphohfnafjncbainfc) (one click, updates automatically).
+
+To install a specific version, or to try the latest source, install it from a release instead:
 
 1. Download `bilingual-caption-overlay-<version>.zip` from the [Releases page](https://github.com/fatcorn753/youtube-bilingual-caption-overlay/releases/latest).
 2. Unzip it into a folder you will keep (Chrome loads the extension from that folder, so do not delete it).

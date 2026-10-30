@@ -39,7 +39,9 @@ Firefox / Safari は非対応です。
 
 ## インストール
 
-Chrome ウェブストアにはまだ公開していません。リリースの zip から入れてください。
+[Chrome ウェブストア](https://chromewebstore.google.com/detail/bilingual-caption-overlay/fbkiogggnhmaadaphohfnafjncbainfc)から入れてください(ワンクリックで入り、更新も自動です)。
+
+特定のバージョンや最新のソースを試したいときは、リリースの zip から入れてください。
 
 1. [Releases のページ](https://github.com/fatcorn753/youtube-bilingual-caption-overlay/releases/latest)から `bilingual-caption-overlay-<バージョン>.zip` をダウンロードする
 2. ずっと置いておくフォルダに展開する(Chrome はそのフォルダから拡張を読み込むので、削除しないでください)
