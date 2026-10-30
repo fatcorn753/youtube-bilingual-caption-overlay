@@ -1,6 +1,6 @@
 {
   "extName": {
-    "message": "YouTube 字幕オーバーレイ(日英)"
+    "message": "YouTube 字幕オーバーレイ"
   },
   "extDescription": {
     "message": "YouTube の字幕と、その訳(既定は日本語。ツールバーのアイコンで他の言語も選べます)を最前面の小窓に表示。別のタブやアプリに移っても見続けられます。翻訳は端末内で完結します。"

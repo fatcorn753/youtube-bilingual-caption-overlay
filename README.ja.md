@@ -1,4 +1,4 @@
-# YouTube 字幕オーバーレイ(日英)
+# YouTube 字幕オーバーレイ
 
 [English](README.md)
 
