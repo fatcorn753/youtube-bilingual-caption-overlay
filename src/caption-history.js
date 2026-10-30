@@ -26,6 +26,21 @@
   const YCO = (root.YCO = root.YCO || {});
   const { constants, text: T } = YCO;
 
+  /**
+   * 文の途中で字幕が切れていると判断する、直前の字幕の最後の語。
+   * 次の字幕が大文字で始まっていても、これらの語のあとなら、同じ文の続きとみなす
+   * ("...and" / "The cat sat." のように)
+   */
+  const CONTINUATION_WORDS = new Set(
+    ('a an the and or but nor so if that than then because when while as of to in on at for from by with into ' +
+      'about over under my your his her its our their this these those some any not is are was were be been am ' +
+      'do does did have has had will would can could should may might must i\'m i\'ll i\'ve i\'d')
+      .split(' '),
+  );
+
+  /** 文が続くことを示す、字幕の終わりの記号 */
+  const CONTINUATION_PUNCTUATION = /[,;:\-\u2013\u2014\u3001]$/;
+
   class CaptionHistory {
     #onCommit;
     #limits;
@@ -97,7 +112,11 @@
         this.#committedLength = 0;
       } else if (!previous || text.startsWith(previous)) {
         // 伸びた(または最初の字幕)
-        if (!previous) this.#committedLength = 0;
+        if (!previous) {
+          // 字幕が途切れたあとの、新しい字幕
+          if (this.#startsNewLine(text)) this.commitPending();
+          this.#committedLength = 0;
+        }
         this.#visible = text;
       } else if (previous.startsWith(text)) {
         // 一時的に短くなっただけ。長い方を保持する
@@ -106,6 +125,26 @@
       }
 
       this.#extractSentences();
+    }
+
+    /**
+     * 新しい字幕が、新しい行の始まりか。句読点のない手動字幕(歌詞など)を、字幕ごとに行に分けるための判断。
+     * 文が複数の字幕にまたがるときは、続きが小文字で始まるので、つなげたままにする。
+     * 自動生成字幕は、字幕が少しずつ繰り上がるので、ここでは扱わない(話の切れ目で区切る)
+     */
+    #startsNewLine(text) {
+      if (this.#rollup) return false;
+      const pending = this.pending;
+      if (!pending || CONTINUATION_PUNCTUATION.test(pending)) return false;
+
+      const first = text.trimStart()[0] ?? '';
+      const startsLikeNewLine = T.CJK.test(first) || /\p{Lu}/u.test(first);
+      if (!startsLikeNewLine) return false;
+      // 全部が大文字の字幕は、大文字の手がかりにならない
+      if (!/\p{Ll}/u.test(pending) && !T.CJK.test(first)) return false;
+
+      const lastWord = pending.split(/\s+/).pop().toLowerCase().replace(/[^\p{L}']/gu, '');
+      return !CONTINUATION_WORDS.has(lastWord);
     }
 
     /** 未確定の字幕を、そのまま 1 行として確定する(話が止まったときなど) */
@@ -138,6 +177,8 @@
         }
       }
       // 画面から消えた先頭部分の長さ(重なりがなければ、前の字幕の全部)
+      // 重なりがなければ、続きではなく、新しい字幕に入れ替わった
+      if (overlap === 0 && this.#startsNewLine(text)) this.commitPending();
       const goneLength = previous.length - overlap;
       this.#moveToCarry(previous, goneLength);
       this.#committedLength = Math.max(0, this.#committedLength - goneLength);

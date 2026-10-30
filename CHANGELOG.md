@@ -2,6 +2,12 @@
 
 All notable changes are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+
+- Lyrics and other manual captions without punctuation were merged into one long line (up to 220 characters). A caption that replaces the previous one now starts a new line when it begins with a capital letter (or a Chinese/Japanese character). Captions that continue a sentence are still joined: a lowercase start, a previous caption ending in a comma or a word like "and" / "the" / "to", all-capitals captions, and auto-generated captions are left alone. The wait before a gap in captions closes the current line was shortened from 8 s to 2.5 s.
+
 ## [2.3.0] - 2026-10-26
 
 ### Added

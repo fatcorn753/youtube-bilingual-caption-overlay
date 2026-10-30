@@ -59,11 +59,82 @@ test('略語の後ろでは区切らず、"I." では区切る', () => {
   assert.deepEqual(lines, ['Mr. Smith went home.', 'So do I.', 'Yes.']);
 });
 
-test('日本語は、字幕をまたいでも空白なしでつなぐ', () => {
+test('日本語(句読点なし)は、字幕ごとに行を分ける', () => {
   const { history, lines } = createHistory();
   history.update('これは');
-  history.update('続きです。');
-  assert.deepEqual(lines, ['これは続きです。']);
+  history.update('続きです');
+  history.update('次の行です');
+  assert.deepEqual(lines, ['これは', '続きです']);
+  assert.equal(history.pending, '次の行です');
+});
+
+test('日本語でも、句点で終わっていれば文として確定する', () => {
+  const { history, lines } = createHistory();
+  history.update('これは文です。');
+  assert.deepEqual(lines, ['これは文です。']);
+});
+
+// ---- 句読点のない手動字幕(歌詞など) -----------------------------------------------
+
+test('歌詞: 句読点がなくても、大文字で始まる字幕ごとに行を分ける', () => {
+  const { history, lines } = createHistory();
+  for (const cue of ['The gate opened on me', 'So I leaped', 'Down, down, and down I go', 'I tell myself I am a tough girl']) {
+    history.update(cue);
+  }
+  assert.deepEqual(lines, ['The gate opened on me', 'So I leaped', 'Down, down, and down I go']);
+  assert.equal(history.pending, 'I tell myself I am a tough girl');
+});
+
+test('歌詞: 字幕が途切れる(空になる)間をはさんでも、大文字で始まれば分ける', () => {
+  const { history, lines } = createHistory();
+  history.update('My heart goes right');
+  history.update('');
+  history.update('My head goes left');
+  assert.deepEqual(lines, ['My heart goes right']);
+  assert.equal(history.pending, 'My head goes left');
+});
+
+test('歌詞: 小文字で始まる字幕は、前の字幕の続きとしてつなぐ', () => {
+  const { history } = createHistory();
+  history.update('And end up');
+  history.update('on your bed');
+  assert.equal(history.pending, 'And end up on your bed');
+});
+
+test('文が続く語(and / the / to など)や記号で終わる字幕のあとは、大文字で始まっても分けない', () => {
+  for (const [first, second] of [
+    ['We went to see the', 'Eiffel Tower today'],
+    ['She said hello,', 'Harry waved back'],
+    ['It was cold and', 'Windy outside'],
+  ]) {
+    const { history, lines } = createHistory();
+    history.update(first);
+    history.update(second);
+    assert.deepEqual(lines, [], `${first} / ${second}`);
+  }
+});
+
+test('全部が大文字の字幕は、大文字を手がかりにせず、つなげる', () => {
+  const { history, lines } = createHistory();
+  history.update('THE QUICK BROWN');
+  history.update('FOX JUMPS');
+  assert.deepEqual(lines, []);
+  assert.equal(history.pending, 'THE QUICK BROWN FOX JUMPS');
+});
+
+test('自動生成字幕(ロールアップ)は、大文字では分けない', () => {
+  const { history, lines } = createHistory();
+  history.update('the quick brown fox', { rollup: true });
+  history.update('Something else entirely different', { rollup: true });
+  assert.deepEqual(lines, []);
+});
+
+test('字幕が伸びただけのとき(続き)は、大文字が混ざっても分けない', () => {
+  const { history, lines } = createHistory();
+  history.update('We met');
+  history.update('We met Harry at the zoo');
+  assert.deepEqual(lines, []);
+  assert.equal(history.pending, 'We met Harry at the zoo');
 });
 
 test('文末が来ないまま止まったら、commitPending() で確定できる', () => {
