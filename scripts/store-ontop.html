@@ -1,0 +1,46 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>ストア用スクショ: 他のアプリの上に残る小窓</title>
+<!-- 自作の絵だけで作る。実際の動画やアプリの画面は使わない。scripts/screenshots.sh から撮る。 -->
+<style>
+  html, body { margin: 0; width: 1280px; height: 800px; overflow: hidden; font-family: -apple-system, "Helvetica Neue", sans-serif; }
+  body { background: linear-gradient(135deg, #1e3a8a 0%, #6d28d9 55%, #be185d 100%); position: relative; }
+  h1 { position: absolute; left: 0; right: 0; top: 34px; margin: 0; text-align: center; color: #fff; font-size: 40px; font-weight: 700; letter-spacing: .01em; text-shadow: 0 2px 12px rgba(0,0,0,.35); }
+  .window { position: absolute; background: #fff; border-radius: 14px; box-shadow: 0 24px 60px rgba(0,0,0,.4); overflow: hidden; }
+  .bar { height: 38px; background: #e5e7eb; display: flex; align-items: center; gap: 8px; padding: 0 14px; }
+  .bar i { width: 12px; height: 12px; border-radius: 50%; background: #ef4444; }
+  .bar i:nth-child(2) { background: #f59e0b; } .bar i:nth-child(3) { background: #22c55e; }
+  .bar span { margin-left: 10px; font-size: 13px; color: #6b7280; }
+  .editor { left: 70px; top: 150px; width: 760px; height: 560px; }
+  .side { position: absolute; left: 0; top: 38px; bottom: 0; width: 170px; background: #f3f4f6; padding: 18px 14px; box-sizing: border-box; }
+  .main { position: absolute; left: 170px; top: 38px; right: 0; bottom: 0; padding: 26px 30px; }
+  .ln { height: 12px; border-radius: 6px; background: #d1d5db; margin-bottom: 16px; }
+  .side .ln { background: #d9dce1; height: 10px; margin-bottom: 14px; }
+  .ln.h { height: 18px; width: 40%; background: #9ca3af; margin-bottom: 26px; }
+  .pip { right: 70px; bottom: 70px; width: 520px; height: 380px; background: #000; border: 1px solid rgba(255,255,255,.25); }
+  .pip .bar { background: #111827; }
+  .pip .bar span { color: #9ca3af; }
+  .pip iframe { position: absolute; left: 0; top: -112px; width: 100%; height: 500px; border: 0; }
+  /* デモ最終行の「未完了の字幕」を窓の外へ押し出し、上端は薄く消して、文が途中で切れて見えないようにする */
+  .pip .view { position: absolute; left: 0; right: 0; top: 38px; bottom: 0; overflow: hidden; }
+  .pip .view::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 64px; z-index: 1; background: #000; }
+  .pip .view::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 70px; z-index: 1; background: linear-gradient(#000, rgba(0,0,0,0)); }
+</style>
+<h1>Stays on top of your other apps</h1>
+<div class="window editor">
+  <div class="bar"><i></i><i></i><i></i><span>Notes</span></div>
+  <div class="side">
+    <div class="ln" style="width:80%"></div><div class="ln" style="width:60%"></div><div class="ln" style="width:70%"></div>
+    <div class="ln" style="width:50%"></div><div class="ln" style="width:75%"></div>
+  </div>
+  <div class="main">
+    <div class="ln h"></div>
+    <div class="ln" style="width:92%"></div><div class="ln" style="width:85%"></div><div class="ln" style="width:90%"></div>
+    <div class="ln" style="width:60%"></div><div class="ln" style="width:88%"></div><div class="ln" style="width:94%"></div>
+    <div class="ln" style="width:70%"></div><div class="ln" style="width:86%"></div><div class="ln" style="width:55%"></div>
+  </div>
+</div>
+<div class="window pip">
+  <div class="bar"><i></i><i></i><i></i><span>Bilingual Caption Overlay</span></div>
+  <div class="view"><iframe src="../test/manual/demo.html?theme=dark"></iframe></div>
+</div>

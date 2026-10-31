@@ -21,3 +21,11 @@ for theme in dark light; do
     "http://localhost:$PORT/test/manual/demo.html?theme=$theme" >/dev/null 2>&1
   echo "作成しました: docs/images/overlay-$theme.png"
 done
+
+# ストア用の「他のアプリの上に残る」スクショ(1280×800)。dist/ は git に入れない
+mkdir -p dist/store
+"$CHROME" --headless=new --disable-gpu --hide-scrollbars --window-size=1280,800 \
+  --force-device-scale-factor=1 --virtual-time-budget=9000 \
+  --screenshot="dist/store/screenshot-ontop.png" \
+  "http://localhost:$PORT/scripts/store-ontop.html" >/dev/null 2>&1
+echo "作成しました: dist/store/screenshot-ontop.png"
