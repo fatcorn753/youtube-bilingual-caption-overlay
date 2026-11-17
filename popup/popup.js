@@ -45,14 +45,20 @@
     if (id === checkId) statusElement.textContent = message; // 古い問い合わせの結果で上書きしない
   }
 
+  const liveCheckbox = document.getElementById('liveTranslation');
+
   settingsStore.load().then((settings) => {
     captionSelect.value = settings.captionLang;
     targetSelect.value = settings.targetLang;
+    liveCheckbox.checked = settings.liveTranslation !== false;
     showPairStatus();
   });
   captionSelect.addEventListener('change', () => {
     chromeApi.storageSet({ captionLang: captionSelect.value });
     showPairStatus();
+  });
+  liveCheckbox.addEventListener('change', () => {
+    chromeApi.storageSet({ liveTranslation: liveCheckbox.checked });
   });
   targetSelect.addEventListener('change', () => {
     chromeApi.storageSet({ targetLang: targetSelect.value });

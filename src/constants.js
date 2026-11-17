@@ -17,6 +17,7 @@
       showJa: true, // 訳を表示するか(保存済みの設定との互換のため、名前は showJa のまま)
       targetLang: 'ja', // 翻訳先の言語(LANGUAGES のコード)。ポップアップで選ぶ
       captionLang: 'en', // 字幕の言語。小窓を開いている間、YouTube の字幕をこの言語に切り替える(トラックがあれば)
+      liveTranslation: true, // 未確定の文(話している途中の 1 行)も訳すか。ポップアップで切り替える
     }),
 
     FONT_SIZE: Object.freeze({ min: 14, max: 72, step: 4 }),
@@ -67,6 +68,11 @@
       /** 動画が替わったあと、字幕の準備ができるのを待つ上限(ミリ秒)と、確かめる間隔 */
       captionsReadyTimeoutMs: 20000,
       captionsReadyPollMs: 500,
+      /**
+       * 未確定の文を訳し直す、最短の間隔。文は単語ごとに伸びるので、伸びるたびに訳すと、
+       * 訳が目まぐるしく書き換わる
+       */
+      liveTranslationMs: 1000,
       /** 翻訳の準備に失敗した後、自動で再試行するまでの間隔 */
       translatorRetryMs: 15000,
       /**
@@ -87,6 +93,8 @@
       maxPending: 220,
       /** 句読点のない字幕では、もっと短く区切る(文字数) */
       maxPendingUnpunctuated: 120,
+      /** 未確定の文は、この文字数になるまで訳さない(短すぎる断片は、訳が当てにならない) */
+      liveTranslationMinLength: 12,
       /** 「行が繰り上がった」と判定するための、前の字幕との最小の重なり(文字数) */
       minOverlap: 8,
       /** 履歴に残す最大行数 */

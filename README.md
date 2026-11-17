@@ -13,6 +13,7 @@ A Chrome extension that shows YouTube captions in an **always-on-top floating wi
 
 - **One sentence per line.** Captions are grouped into sentences and stacked from top to bottom. The newest line is bright; older lines fade.
 - **Translation under every line.** Translated on your device by Chrome's built-in Translator API. Nothing is sent to any server. Japanese by default; pick another of 20 languages (English, Chinese, Korean, Spanish, French, German, Portuguese, Italian, Russian, Arabic, Hindi and more) from the toolbar icon.
+- **Translation while the sentence is still being spoken.** The line in progress gets a dimmed translation that updates about once a second, and is replaced by the final one when the sentence ends. Turn it off in the popup if the changing text distracts you.
 - **Works with auto-generated captions**, which have no punctuation: lines are split when the speaker pauses.
 - **Stays on top** of other tabs and apps (Document Picture-in-Picture).
 - Adjustable text size, light/dark theme, and a switch to hide the translation.

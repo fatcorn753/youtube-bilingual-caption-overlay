@@ -36,6 +36,16 @@
       label.second {
         margin-top: 12px;
       }
+      label.check {
+        display: flex;
+        gap: 6px;
+        align-items: flex-start;
+        margin: 12px 0 0;
+        font-weight: 400;
+      }
+      label.check input {
+        margin: 3px 0 0;
+      }
       select {
         width: 100%;
         padding: 6px 8px;
@@ -61,6 +71,10 @@
     <label for="targetLang" class="second" data-i18n="popupTargetLabel"></label>
     <select id="targetLang"></select>
     <p id="pairStatus" role="status"></p>
+    <label class="check">
+      <input type="checkbox" id="liveTranslation" />
+      <span data-i18n="popupLiveLabel"></span>
+    </label>
     <p data-i18n="popupHint"></p>
     <p>
       <a

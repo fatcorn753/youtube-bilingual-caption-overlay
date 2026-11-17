@@ -71,6 +71,9 @@
   "popupHint": {
     "message": "開いている YouTube のタブにすぐ反映されます。小窓を開いている間、動画にその言語の字幕があれば、字幕を切り替えます。"
   },
+  "popupLiveLabel": {
+    "message": "話している途中の文も訳す(文が伸びると、訳も変わります)"
+  },
   "popupFeedback": {
     "message": "不具合の報告・要望"
   },

@@ -37,6 +37,15 @@
   let translationQueue = Promise.resolve();
   /** 翻訳に失敗した行を、あとでやり直すためのタイマー */
   let retryTimer = null;
+  /** 未確定の文の翻訳(途中までの訳)。確定した文の翻訳とは別に、間隔をあけて行う */
+  let liveTimer = null;
+  let liveLastRunAt = 0;
+  /** 最後に翻訳を頼んだ未確定の文(同じ文を何度も訳さない) */
+  let liveRequested = '';
+  /** いま出ている途中の訳の、元の文。未確定の文がこれの続きでなくなったら、訳を消す */
+  let liveShownFor = '';
+  /** 履歴を消すたびに増やす。消す前に始まった翻訳の結果を捨てるために使う */
+  let liveGeneration = 0;
   /** 動画の切替中か。古い動画の字幕が DOM に残っている間は、字幕を読まない */
   let navigating = false;
   let navigationTimer = null;
@@ -104,6 +113,59 @@
     retryTimer = setTimeout(retryUntranslated, constants.TIMING.translatorRetryMs + 1000);
   }
 
+  // ---- 未確定の文の翻訳 --------------------------------------------------
+
+  const isLiveTranslationOn = () => settings.showJa && settings.liveTranslation;
+
+  function clearLiveTranslation() {
+    if (!liveShownFor) return;
+    liveShownFor = '';
+    overlay?.setPendingTranslation('');
+  }
+
+  /** 途中の訳の状態を捨てる(履歴を消したとき・小窓を閉じたとき) */
+  function resetLiveTranslation() {
+    clearTimeout(liveTimer);
+    liveTimer = null;
+    liveRequested = '';
+    liveShownFor = '';
+    liveGeneration += 1;
+  }
+
+  /**
+   * 未確定の文が変わったら呼ぶ。訳が古くなっていれば消し、間隔をあけて訳し直す。
+   * 文が確定すれば、確定した行の訳(onLineCommitted)に置き換わる
+   */
+  function updateLiveTranslation() {
+    if (!overlay) return;
+    const text = isLiveTranslationOn() ? history.pending : '';
+    // 別の文に替わった: 前の文の訳を、新しい文の下に残さない
+    if (!text.startsWith(liveShownFor)) clearLiveTranslation();
+    if (text.length < constants.LIMITS.liveTranslationMinLength || text === liveRequested || liveTimer) return;
+    const wait = Math.max(0, liveLastRunAt + constants.TIMING.liveTranslationMs - Date.now());
+    liveTimer = setTimeout(translateLive, wait);
+  }
+
+  async function translateLive() {
+    liveTimer = null;
+    if (!overlay || !isLiveTranslationOn()) return;
+    const text = history.pending;
+    if (text.length < constants.LIMITS.liveTranslationMinLength || text === liveRequested) return;
+    liveRequested = text;
+    liveLastRunAt = Date.now();
+    const generation = liveGeneration;
+
+    translator.setTrackLang(await youtube.getCaptionLanguage());
+    const translation = await translator.translate(text);
+    if (!overlay || generation !== liveGeneration) return;
+    // 訳している間に文が確定した(または別の文に替わった)ら、出さない
+    if (translation && isLiveTranslationOn() && history.pending.startsWith(text)) {
+      overlay.setPendingTranslation(translation);
+      liveShownFor = text;
+    }
+    updateLiveTranslation(); // 訳している間に文が伸びていたら、続きを訳す
+  }
+
   /** 字幕が変わったことを知らせる。マイクロタスクにまとめて描画する */
   function scheduleRender() {
     if (renderScheduled) return;
@@ -131,6 +193,8 @@
     const hasAnything = history.visible || overlay.lineCount;
     const placeholder = hasAnything && !captionsUnreadable ? '' : emptyPlaceholder();
     overlay.setPending(history.pending, placeholder);
+    if (!history.pending) liveShownFor = ''; // 小窓の側で、途中の訳も消えている
+    updateLiveTranslation();
   }
 
   /** 字幕がまだ 1 つもないときの案内 */
@@ -183,6 +247,7 @@
     clearTimeout(retryTimer);
     retryTimer = null;
     history.reset();
+    resetLiveTranslation();
     translator.resetLanguage(); // 前の動画の言語を引きずらない
     overlay?.clearLines();
     lastRenderKey = null;
@@ -202,10 +267,12 @@
   function onShowJaChanged() {
     if (settings.showJa) retryTranslation();
     else setStatus('');
+    updateLiveTranslation();
   }
 
   /**
-   * 別のタブの小窓で変えた見た目の設定(文字サイズ・テーマ・訳の表示)を、このタブにも反映する。
+   * 別のタブの小窓で変えた見た目の設定(文字サイズ・テーマ・訳の表示)と、ポップアップで変えた
+   * 「途中の文も訳す」を、このタブにも反映する。
    * 反映しないと、このタブが古い値を持ち続け、次のボタン操作で見た目が食い違う
    */
   function syncAppearance(changes) {
@@ -214,6 +281,7 @@
       fontSize: (value) => Number.isFinite(value) && value >= min && value <= max,
       theme: (value) => Object.hasOwn(constants.THEMES, value),
       showJa: (value) => typeof value === 'boolean',
+      liveTranslation: (value) => typeof value === 'boolean',
     };
     const changed = [];
     for (const [key, isValid] of Object.entries(valid)) {
@@ -225,6 +293,7 @@
     if (!changed.length) return;
     overlay?.applySettings(settings);
     if (overlay && changed.includes('showJa')) onShowJaChanged();
+    if (changed.includes('liveTranslation')) updateLiveTranslation();
   }
 
   /**
@@ -240,7 +309,9 @@
       overlay?.applySettings(settings);
       // 前の言語の訳は消して、いま出ている行を新しい言語で訳し直す
       overlay?.clearTranslations();
+      resetLiveTranslation(); // 途中の訳も、新しい言語で訳し直す
       if (overlay && settings.showJa) retryTranslation();
+      updateLiveTranslation();
     }
     const nextCaption = changes.captionLang?.newValue;
     if (settingsStore.isSupportedLanguage(nextCaption) && nextCaption !== settings.captionLang) {
@@ -299,6 +370,7 @@
     }
 
     history.reset();
+    resetLiveTranslation();
     lastRenderKey = null;
     navigating = false;
     playingSeconds = 0;
@@ -331,6 +403,7 @@
     clearInterval(watchdogTimer);
     clearInterval(prepareTimer);
     retryTimer = null;
+    resetLiveTranslation();
     stopWatchingCaptions?.();
     stopWatchingCaptions = null;
     youtube.setNativeCaptionsHidden(false, INSTANCE);

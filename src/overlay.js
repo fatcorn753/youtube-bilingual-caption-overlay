@@ -8,7 +8,7 @@
  *   #stage
  *     #text            履歴(スクロールする)
  *       .entry.h       確定した 1 文: .en(英語) と .ja(日本語訳)
- *       .entry.live    未確定の文(いまの 1 行): .en だけ
+ *       .entry.live    未確定の文(いまの 1 行): .en と、途中までの訳(.ja。薄く出す)
  *     #status          翻訳の状態メッセージ(準備中・失敗理由)
  *   #ctl               右上のボタン(カーソルを乗せると現れる)
  */
@@ -40,6 +40,7 @@
     .entry { margin-bottom: .55em; }
     .entry .ja { font-size: var(--jafs); color: var(--ja); margin-top: .15em; }
     .entry .ja:empty, body.nojp .ja { display: none; }
+    .entry.live .ja { opacity: .6; }
     #text .h:not(.latest) { opacity: .55; }
     #status { flex: none; margin-top: .4em; text-align: center; font-size: 13px; font-style: italic; opacity: .65; }
     #status:empty { display: none; }
@@ -63,6 +64,7 @@
     #jaButton;
     #liveElement;
     #liveTextElement;
+    #liveTranslationElement;
     /** 一番新しい行(ここだけ濃く表示する) */
     #latestElement = null;
     #lineCount = 0;
@@ -144,7 +146,15 @@
         this.#liveTextElement.textContent = content;
         this.#liveTextElement.style.opacity = text ? '1' : '0.45';
         this.#liveElement.style.display = content ? '' : 'none';
+        if (!text) this.#liveTranslationElement.textContent = ''; // 文が確定した(または消えた)ら、途中の訳も消す
         this.#markLatest(text ? this.#liveElement : this.#liveElement.previousElementSibling);
+      });
+    }
+
+    /** 未確定の文の下に、途中までの訳を出す。空文字で消す */
+    setPendingTranslation(text) {
+      this.#keepBottom(() => {
+        this.#liveTranslationElement.textContent = text;
       });
     }
 
@@ -235,9 +245,10 @@
     }
 
     #resetLiveEntry() {
-      const { entry, english } = this.#createEntry('entry live');
+      const { entry, english, japanese } = this.#createEntry('entry live');
       this.#liveElement = entry;
       this.#liveTextElement = english;
+      this.#liveTranslationElement = japanese;
       this.#textElement.appendChild(entry);
     }
 
