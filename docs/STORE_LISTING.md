@@ -10,7 +10,7 @@ Keep YouTube captions in a small always-on-top window, with a translation under 
 
 - One sentence per line, scrolling like lyrics, so you can read at your own pace
 - Translation appears right under each line (Japanese by default; pick any of 20 languages from the toolbar icon)
-- The sentence still being spoken is translated too, so the translation keeps up with the speaker
+- Optionally, the sentence still being spoken can be translated too (off by default)
 - The window stays on top, so you can switch to another tab or app and keep reading
 - Light and dark themes, adjustable text size
 
@@ -33,7 +33,7 @@ YouTube の字幕を、最前面の小窓に表示します。各行の下に翻
 
 - 1 文 = 1 行で、歌詞のように流れます。自分のペースで読めます
 - 各行のすぐ下に翻訳を表示(既定は日本語。ツールバーのアイコンから 20 言語を選べます)
-- 話している途中の文も訳すので、訳が話に遅れません
+- 話している途中の文も訳せます(任意。既定では、文が完成してから訳を出します)
 - 小窓は最前面に残るので、別のタブやアプリに移っても読み続けられます
 - ライト/ダークのテーマ、文字サイズの調整
 

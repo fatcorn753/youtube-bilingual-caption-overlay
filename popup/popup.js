@@ -50,7 +50,7 @@
   settingsStore.load().then((settings) => {
     captionSelect.value = settings.captionLang;
     targetSelect.value = settings.targetLang;
-    liveCheckbox.checked = settings.liveTranslation !== false;
+    liveCheckbox.checked = settings.liveTranslation === true;
     showPairStatus();
   });
   captionSelect.addEventListener('change', () => {

@@ -17,7 +17,9 @@
       showJa: true, // 訳を表示するか(保存済みの設定との互換のため、名前は showJa のまま)
       targetLang: 'ja', // 翻訳先の言語(LANGUAGES のコード)。ポップアップで選ぶ
       captionLang: 'en', // 字幕の言語。小窓を開いている間、YouTube の字幕をこの言語に切り替える(トラックがあれば)
-      liveTranslation: true, // 未確定の文(話している途中の 1 行)も訳すか。ポップアップで切り替える
+      // 未確定の文(話している途中の 1 行)も訳すか。ポップアップで切り替える。
+      // 既定はオフ: 訳は、文が完成してから出す(途中の訳は、文が伸びるたびに書き換わって読みにくい)
+      liveTranslation: false,
     }),
 
     FONT_SIZE: Object.freeze({ min: 14, max: 72, step: 4 }),
