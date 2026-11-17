@@ -50,6 +50,9 @@
         color: var(--muted);
         font-size: 12px;
       }
+      a {
+        color: inherit;
+      }
     </style>
   </head>
   <body>
@@ -59,6 +62,14 @@
     <select id="targetLang"></select>
     <p id="pairStatus" role="status"></p>
     <p data-i18n="popupHint"></p>
+    <p>
+      <a
+        href="https://github.com/fatcorn753/youtube-bilingual-caption-overlay/issues/new/choose"
+        target="_blank"
+        rel="noopener"
+        data-i18n="popupFeedback"
+      ></a>
+    </p>
 
     <script src="../src/constants.js"></script>
     <script src="../src/chrome-api.js"></script>

@@ -7,6 +7,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 ### Added
 
 - 13 more languages for captions and translations, 20 in total: Traditional Chinese, Portuguese, Italian, Dutch, Polish, Russian, Ukrainian, Turkish, Arabic, Hindi, Indonesian, Vietnamese and Thai. Simplified and Traditional Chinese caption tracks are told apart (when the chosen one is missing, the other is used). Arabic is shown right to left, and `؟` `۔` `।` end a sentence.
+- A link in the popup to report a problem or request a feature (opens the GitHub issue form).
 
 ### Fixed
 

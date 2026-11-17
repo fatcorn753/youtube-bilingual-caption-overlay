@@ -71,6 +71,9 @@
   "popupHint": {
     "message": "開いている YouTube のタブにすぐ反映されます。小窓を開いている間、動画にその言語の字幕があれば、字幕を切り替えます。"
   },
+  "popupFeedback": {
+    "message": "不具合の報告・要望"
+  },
   "statusNeedsGesture": {
     "message": "この言語の翻訳モデルの取得にはクリックが必要です。小窓を閉じて、もう一度開いてください"
   }

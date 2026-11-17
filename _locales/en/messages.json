@@ -71,6 +71,9 @@
   "popupHint": {
     "message": "Applies right away to open YouTube tabs. While the window is open, the video's captions are switched to the caption language if the video has that track."
   },
+  "popupFeedback": {
+    "message": "Report a problem or request a feature"
+  },
   "statusNeedsGesture": {
     "message": "Downloading this translation model needs a click. Close the window and open it again"
   }
