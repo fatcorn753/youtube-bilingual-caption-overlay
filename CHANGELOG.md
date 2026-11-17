@@ -7,6 +7,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 ### Fixed
 
 - Auto-generated captions that do have punctuation were cut in the middle of a sentence at about 120 characters. Once a sentence end appears in auto-generated captions, lines are now kept until the end of the sentence, as with manual captions. (Found by running against the real YouTube page.)
+- Font size, theme and the translation toggle changed in one YouTube tab are now applied to other open YouTube tabs. The window's buttons save only these settings, so they can no longer overwrite the languages chosen in the popup.
 
 ## [2.3.1] - 2026-10-30
 

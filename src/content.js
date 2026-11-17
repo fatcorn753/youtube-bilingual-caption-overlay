@@ -196,12 +196,41 @@
     for (const { slot, text } of overlay?.untranslatedLines() ?? []) enqueueTranslation(slot, text);
   }
 
+  /** 訳の表示を切り替えたあとの処理: オンなら訳のない行を訳し、オフなら状態メッセージを消す */
+  function onShowJaChanged() {
+    if (settings.showJa) retryTranslation();
+    else setStatus('');
+  }
+
   /**
-   * ポップアップなどで保存された設定の変更を、開いている小窓に反映する。
-   * いまは翻訳先の言語だけ(文字サイズなどは小窓のボタンで変える)
+   * 別のタブの小窓で変えた見た目の設定(文字サイズ・テーマ・訳の表示)を、このタブにも反映する。
+   * 反映しないと、このタブが古い値を持ち続け、次のボタン操作で見た目が食い違う
+   */
+  function syncAppearance(changes) {
+    const { min, max } = constants.FONT_SIZE;
+    const valid = {
+      fontSize: (value) => Number.isFinite(value) && value >= min && value <= max,
+      theme: (value) => Object.hasOwn(constants.THEMES, value),
+      showJa: (value) => typeof value === 'boolean',
+    };
+    const changed = [];
+    for (const [key, isValid] of Object.entries(valid)) {
+      const next = changes[key]?.newValue;
+      if (!isValid(next) || next === settings[key]) continue;
+      settings[key] = next;
+      changed.push(key);
+    }
+    if (!changed.length) return;
+    overlay?.applySettings(settings);
+    if (overlay && changed.includes('showJa')) onShowJaChanged();
+  }
+
+  /**
+   * ポップアップや別のタブで保存された設定の変更を、このタブ(と開いている小窓)に反映する
    */
   function onStoredSettingsChanged(changes) {
     if (!isCurrentInstance()) return;
+    syncAppearance(changes);
     const nextTarget = changes.targetLang?.newValue;
     if (settingsStore.isSupportedLanguage(nextTarget) && nextTarget !== settings.targetLang) {
       settings.targetLang = nextTarget;
@@ -234,12 +263,11 @@
     if (action === 'toggleTheme') settings.theme = settings.theme === 'dark' ? 'light' : 'dark';
     if (action === 'toggleJa') settings.showJa = !settings.showJa;
 
-    settingsStore.save(settings);
+    // 見た目の設定だけを保存する。全部を保存すると、ポップアップで選んだ言語を、読み込み前の既定値で上書きしうる
+    const { fontSize, theme, showJa } = settings;
+    settingsStore.save({ fontSize, theme, showJa });
     overlay?.applySettings(settings);
-    if (action === 'toggleJa') {
-      if (settings.showJa) retryTranslation();
-      else setStatus('');
-    }
+    if (action === 'toggleJa') onShowJaChanged();
   }
 
   async function openOverlay() {
