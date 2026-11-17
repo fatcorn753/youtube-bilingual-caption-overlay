@@ -2,6 +2,12 @@
 
 All notable changes are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+
+- Auto-generated captions that do have punctuation were cut in the middle of a sentence at about 120 characters. Once a sentence end appears in auto-generated captions, lines are now kept until the end of the sentence, as with manual captions. (Found by running against the real YouTube page.)
+
 ## [2.3.1] - 2026-10-30
 
 ### Fixed

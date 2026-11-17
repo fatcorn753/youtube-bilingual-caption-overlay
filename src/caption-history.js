@@ -53,8 +53,13 @@
     #carry = '';
     /** 文末記号がないまま長く続いた。次に文末記号が来るまで、句読点なしとして扱う */
     #unpunctuatedSticky = false;
-    /** 自動生成字幕(ロールアップ表示)か。自動生成字幕は句読点を持たない */
+    /** 自動生成字幕(ロールアップ表示)か。自動生成字幕は、句読点を持たないことが多い */
     #rollup = false;
+    /**
+     * 自動生成字幕に、文末記号が出てきた。YouTube の自動生成字幕には、句読点が付くものがある
+     * (2026-11 に実際の YouTube で確認)。そのときは、文末まで貯めて、文の途中で区切らない
+     */
+    #rollupPunctuated = false;
     #lastLine = '';
     /** 字幕の言語。文の区切り(略語の表など)を言語に合わせる */
     #language = 'en';
@@ -88,7 +93,7 @@
 
     /** 句読点のない字幕として扱っているか */
     get isUnpunctuated() {
-      return this.#rollup || this.#unpunctuatedSticky;
+      return (this.#rollup && !this.#rollupPunctuated) || this.#unpunctuatedSticky;
     }
 
     /** 話が止まってから未確定の字幕を確定するまでの待ち時間(ミリ秒) */
@@ -160,6 +165,7 @@
       this.#committedLength = 0;
       this.#carry = '';
       this.#unpunctuatedSticky = false;
+      this.#rollupPunctuated = false;
       this.#lastLine = '';
     }
 
@@ -210,6 +216,7 @@
 
       if (consumed > 0) {
         this.#unpunctuatedSticky = false;
+        if (this.#rollup) this.#rollupPunctuated = true;
         if (consumed >= carryPrefixLength) {
           // carry を使い切り、表示中の字幕の先頭も確定した
           this.#committedLength += consumed - carryPrefixLength;

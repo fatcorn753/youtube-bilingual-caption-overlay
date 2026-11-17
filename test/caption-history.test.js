@@ -270,3 +270,27 @@ test('setLanguage() をしなければ、英語の表で区切る(z.B. で区切
   history.update('Das ist z.B. ein Test.');
   assert.deepEqual(lines, ['Das ist z.B.', 'ein Test.']);
 });
+
+test('句読点のある自動生成字幕は、文末まで貯めて、文の途中で区切らない', () => {
+  const { history, lines } = createHistory();
+  history.update('Hello and welcome back.', { rollup: true });
+  assert.deepEqual(lines, ['Hello and welcome back.']);
+  assert.ok(!history.isUnpunctuated, '文末記号が出たら、句読点のある字幕として扱う');
+
+  // 句読点なしの上限(maxPendingUnpunctuated)より長い 1 文
+  const words = 'today we are going to practise a long sentence that keeps going and going '.repeat(2).trim();
+  assert.ok(words.length > constants.LIMITS.maxPendingUnpunctuated && words.length < constants.LIMITS.maxPending);
+  history.update(words, { rollup: true });
+  assert.equal(lines.length, 1, '文末が来るまでは区切らない');
+  history.update(`${words} okay.`, { rollup: true });
+  assert.deepEqual(lines[1], `${words} okay.`);
+});
+
+test('自動生成字幕の句読点の有無は、動画ごとに判定し直す', () => {
+  const { history } = createHistory();
+  history.update('Hello and welcome back.', { rollup: true });
+  assert.ok(!history.isUnpunctuated);
+  history.reset();
+  history.update('so today we are going', { rollup: true });
+  assert.ok(history.isUnpunctuated);
+});
