@@ -114,7 +114,8 @@
       root.style.setProperty('--shadow', theme.shadow);
       this.#document.body.classList.toggle('nojp', !settings.showJa);
       this.#jaButton.setAttribute('aria-pressed', String(settings.showJa));
-      this.#jaButton.textContent = settings.targetLang.toUpperCase(); // 翻訳先の言語コード
+      const language = constants.LANGUAGES.find(({ code }) => code === settings.targetLang);
+      this.#jaButton.textContent = language?.label ?? settings.targetLang.toUpperCase(); // 翻訳先の言語
     }
 
     /** 確定した 1 文を、履歴の末尾に足す。訳を入れる欄(.ja)を返す */
@@ -226,6 +227,9 @@
       english.className = 'en';
       const japanese = this.#document.createElement('div');
       japanese.className = 'ja';
+      // アラビア語など、右から左へ書く言語は、文字の向きを本文から決める(句読点が逆の端に出ないように)
+      english.dir = 'auto';
+      japanese.dir = 'auto';
       entry.append(english, japanese);
       return { entry, english, japanese };
     }

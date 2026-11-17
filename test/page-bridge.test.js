@@ -124,3 +124,30 @@ test('getOption が例外を投げても、応答は返る', async () => {
   assert.equal(response.ok, false);
   assert.match(response.error, /boom/);
 });
+
+test('中国語は、簡体字と繁体字のトラックを区別する', async () => {
+  const simplified = track('zh-CN');
+  const traditional = track('zh-TW');
+  player = createPlayer({ current: track('en'), tracklist: [track('en'), simplified, traditional] });
+  await request({ action: 'prefer', languageCode: 'zh-Hant' });
+  assert.equal(player.state.current.languageCode, 'zh-TW');
+  await request({ action: 'prefer', languageCode: 'zh' });
+  assert.equal(player.state.current.languageCode, 'zh-CN');
+});
+
+test('選んだ字体の中国語がなければ、もう一方の字体へ切り替える。すでにそれなら何もしない', async () => {
+  const traditional = track('zh-Hant');
+  player = createPlayer({ current: track('en'), tracklist: [track('en'), traditional] });
+  const first = await request({ action: 'prefer', languageCode: 'zh' });
+  assert.equal(first.changed, true);
+  assert.equal(player.state.current.languageCode, 'zh-Hant');
+  const second = await request({ action: 'prefer', languageCode: 'zh' });
+  assert.equal(second.changed, false);
+  assert.equal(player.state.set.length, 1);
+});
+
+test('pt-BR のような地域つきのトラックは、言語の部分で選ぶ', async () => {
+  player = createPlayer({ current: track('en'), tracklist: [track('en'), track('pt-BR')] });
+  await request({ action: 'prefer', languageCode: 'pt' });
+  assert.equal(player.state.current.languageCode, 'pt-BR');
+});

@@ -23,16 +23,30 @@
 
     /**
      * 選べる言語。コードは Translator API の言語タグ。名前は、その言語自身の表記
-     * (どの UI 言語でも読めるように、翻訳しない)
+     * (どの UI 言語でも読めるように、翻訳しない)。
+     * `label` は、小窓のボタンに出す短い表記(なければ、コードを大文字にしたもの)
      */
     LANGUAGES: Object.freeze([
       Object.freeze({ code: 'ja', name: '日本語' }),
       Object.freeze({ code: 'en', name: 'English' }),
       Object.freeze({ code: 'zh', name: '中文(简体)' }),
+      Object.freeze({ code: 'zh-Hant', name: '中文(繁體)', label: '繁' }),
       Object.freeze({ code: 'ko', name: '한국어' }),
       Object.freeze({ code: 'es', name: 'Español' }),
       Object.freeze({ code: 'fr', name: 'Français' }),
       Object.freeze({ code: 'de', name: 'Deutsch' }),
+      Object.freeze({ code: 'pt', name: 'Português' }),
+      Object.freeze({ code: 'it', name: 'Italiano' }),
+      Object.freeze({ code: 'nl', name: 'Nederlands' }),
+      Object.freeze({ code: 'pl', name: 'Polski' }),
+      Object.freeze({ code: 'ru', name: 'Русский' }),
+      Object.freeze({ code: 'uk', name: 'Українська' }),
+      Object.freeze({ code: 'tr', name: 'Türkçe' }),
+      Object.freeze({ code: 'ar', name: 'العربية' }),
+      Object.freeze({ code: 'hi', name: 'हिन्दी' }),
+      Object.freeze({ code: 'id', name: 'Bahasa Indonesia' }),
+      Object.freeze({ code: 'vi', name: 'Tiếng Việt' }),
+      Object.freeze({ code: 'th', name: 'ไทย' }),
     ]),
 
     /** 訳の文字サイズ = 字幕の文字サイズ × この値 */

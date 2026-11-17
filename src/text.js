@@ -17,14 +17,15 @@
   /**
    * 文末記号と、その後ろの閉じ引用符・括弧。次の 2 通りがある。
    *   - 半角の `. ! ? …`: 直後が空白か末尾のものだけを文の終わりとみなす
-   *                        ("3.14" や "e.g" の途中では区切らない)
+   *                        ("3.14" や "e.g" の途中では区切らない)。
+   *                        アラビア語の `؟ ۔` と、ヒンディー語の `।` も同じ扱い
    *   - 全角の `。 ! ?`   : 日本語は句点の直後に空白を置かないので、後ろに何が続いても文の終わり
    *   - 半角の `! ?`      : 直後が全角の文字("你好吗?我很好")でも文の終わり。中国語・日本語の字幕には、
    *                        半角の記号を空白なしで使うものがある(`.` は数字の小数点などと区別できないので除く)
    * 注意: `g` フラグ付きの RegExp は lastIndex を持つので、使うたびに新しく作る
    */
   const SENTENCE_END_SOURCE =
-    '[.!?…]+["\'”’)\\]]*(?=\\s|$)|[。！？]+[」』）"\'”’)\\]]*|[!?]+["\'”’)\\]]*(?=[\\u3000-\\u9fff\\uff00-\\uffef])';
+    '[.!?…؟۔।]+["\'”’)\\]]*(?=\\s|$)|[。！？]+[」』）"\'”’)\\]]*|[!?]+["\'”’)\\]]*(?=[\\u3000-\\u9fff\\uff00-\\uffef])';
 
   /**
    * ピリオドで終わっていても、文の終わりではない語(言語ごと)。ドットを含む語は、ドットも書く。
@@ -36,6 +37,20 @@
     de: ['Dr', 'Prof', 'Hr', 'Fr', 'Nr', 'Str', 'Tel', 'bzw', 'ca', 'ggf', 'evtl', 'inkl', 'vgl', 'z.B', 'd.h', 'u.a', 'z.T', 'u.U', 'i.d.R', 'o.ä', 'v.a', 'z.Zt'],
     es: ['Sr', 'Sra', 'Srta', 'Dr', 'Dra', 'Lic', 'Ing', 'Prof', 'Ud', 'Uds', 'Vd', 'pág', 'núm', 'Av', 'Gral', 'EE.UU', 'p.ej', 'a.m', 'p.m'],
     fr: ['Mme', 'Mlle', 'Mmes', 'Dr', 'Pr', 'Me', 'St', 'Ste', 'Mgr', 'cf', 'env', 'av', 'apr', 'J.-C', 'c.-à-d', 'p.ex', 'n°', 'MM'],
+    // 英語の表を使うと、"No." が略語(Number)とみなされ、「いいえ。」という 1 文を区切れない
+    it: ['Sig', 'Sig.ra', 'Dott', 'Dr', 'Prof', 'Ing', 'Avv', 'p.es'],
+    pt: ['Sr', 'Sra', 'Dr', 'Dra', 'Prof', 'Av', 'p.ex'],
+    nl: ['dhr', 'mevr', 'dr', 'prof', 'bijv', 'd.w.z', 'o.a', 'm.b.t'],
+    pl: ['np', 'tj', 'tzw', 'prof', 'dr', 'ul', 'św'],
+    tr: ['Dr', 'Prof', 'Sn'],
+    id: ['Dr', 'Prof', 'Bpk'],
+    vi: ['TS', 'PGS', 'GS'],
+    // ラテン文字の略語を使わない言語。英語の表を当てはめない
+    ru: [],
+    uk: [],
+    ar: [],
+    hi: [],
+    th: [],
   });
 
   /** 頭文字("J." など)。"I." は文末になりうるので除く */
@@ -47,7 +62,7 @@
     const key = language in ABBREVIATIONS ? language : 'en';
     if (!abbreviationPatterns.has(key)) {
       const words = ABBREVIATIONS[key].map((word) => word.replace(/[.\-]/g, '\\$&'));
-      abbreviationPatterns.set(key, new RegExp(`(?:^|\\s)(?:${words.join('|')}|${INITIAL})\\.$`));
+      abbreviationPatterns.set(key, new RegExp(`(?:^|\\s)(?:${[...words, INITIAL].join('|')})\\.$`));
     }
     return abbreviationPatterns.get(key);
   }

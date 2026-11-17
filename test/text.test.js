@@ -133,3 +133,17 @@ test('findSentenceEnds: 韓国語・中国語は、半角・全角の文末記�
 test('findSentenceEnds: 表のない言語は、英語の表を使う', () => {
   assert.deepEqual(splitSentences('Mr. Smith left. Bye.', 'xx'), ['Mr. Smith left.', 'Bye.']);
 });
+
+test('findSentenceEnds: イタリア語・ポルトガル語の "No." は 1 文(英語の略語 No. とみなさない)', () => {
+  assert.deepEqual(splitSentences('No. Non lo so.', 'it'), ['No.', 'Non lo so.']);
+  assert.deepEqual(splitSentences('Não. Sr. Silva saiu.', 'pt'), ['Não.', 'Sr. Silva saiu.']);
+});
+
+test('findSentenceEnds: 略語の表が空の言語も、ピリオドで区切る', () => {
+  assert.deepEqual(splitSentences('Привет. Как дела?', 'ru'), ['Привет.', 'Как дела?']);
+});
+
+test('findSentenceEnds: アラビア語の ؟ と、ヒンディー語の । で区切る', () => {
+  assert.deepEqual(splitSentences('كيف حالك؟ أنا بخير.', 'ar'), ['كيف حالك؟', 'أنا بخير.']);
+  assert.deepEqual(splitSentences('नमस्ते। आप कैसे हैं?', 'hi'), ['नमस्ते।', 'आप कैसे हैं?']);
+});

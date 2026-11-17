@@ -4,6 +4,10 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+### Added
+
+- 13 more languages for captions and translations, 20 in total: Traditional Chinese, Portuguese, Italian, Dutch, Polish, Russian, Ukrainian, Turkish, Arabic, Hindi, Indonesian, Vietnamese and Thai. Simplified and Traditional Chinese caption tracks are told apart (when the chosen one is missing, the other is used). Arabic is shown right to left, and `؟` `۔` `।` end a sentence.
+
 ### Fixed
 
 - Auto-generated captions that do have punctuation were cut in the middle of a sentence at about 120 characters. Once a sentence end appears in auto-generated captions, lines are now kept until the end of the sentence, as with manual captions. (Found by running against the real YouTube page.)

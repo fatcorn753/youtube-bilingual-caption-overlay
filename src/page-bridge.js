@@ -22,9 +22,19 @@
 
   const getPlayer = () => root.document.querySelector('#movie_player');
 
-  /** 'en-US' や 'en' を、言語の部分('en')で比べる */
-  const matchesLanguage = (track, languageCode) =>
-    typeof track?.languageCode === 'string' && track.languageCode.toLowerCase().split('-')[0] === languageCode;
+  /**
+   * トラックの言語を、選べる言語のコード(小文字)にそろえる。'en-US' → 'en'。
+   * 中国語だけは、簡体字('zh')と繁体字('zh-hant')を分ける('zh-TW' 'zh-HK' 'zh-Hant' は繁体字)
+   */
+  function trackLanguage(track) {
+    if (typeof track?.languageCode !== 'string') return null;
+    const code = track.languageCode.toLowerCase();
+    const base = code.split('-')[0];
+    if (base === 'zh' && /-(hant|tw|hk|mo)\b/.test(code)) return 'zh-hant';
+    return base;
+  }
+
+  const matchesLanguage = (track, languageCode) => trackLanguage(track) === languageCode.toLowerCase();
 
   /**
    * 字幕のトラックを、指定の言語に切り替える。すでにその言語なら何もしない。
@@ -38,9 +48,14 @@
     const current = player.getOption('captions', 'track');
     if (matchesLanguage(current, languageCode)) return { ok: true, changed: false };
 
-    const candidates = (player.getOption('captions', 'tracklist') || []).filter((track) =>
-      matchesLanguage(track, languageCode),
-    );
+    const tracklist = player.getOption('captions', 'tracklist') || [];
+    let candidates = tracklist.filter((track) => matchesLanguage(track, languageCode));
+    if (!candidates.length) {
+      // 中国語は、選んだ字体のトラックがなければ、もう一方の字体でもよい(字幕がないよりよい)
+      const sameBase = (track) => trackLanguage(track)?.split('-')[0] === languageCode.toLowerCase().split('-')[0];
+      if (sameBase(current)) return { ok: true, changed: false };
+      candidates = tracklist.filter(sameBase);
+    }
     const target = candidates.find((track) => track.kind !== 'asr') || candidates[0];
     if (!target) return { ok: true, changed: false, reason: 'no-track' };
 
