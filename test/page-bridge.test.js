@@ -151,3 +151,29 @@ test('pt-BR のような地域つきのトラックは、言語の部分で選�
   await request({ action: 'prefer', languageCode: 'pt' });
   assert.equal(player.state.current.languageCode, 'pt-BR');
 });
+
+test("'current': いまの字幕の言語を返す(地域は落とし、繁体字と iw は言語タグを直す)", async () => {
+  const cases = [
+    ['en-US', 'en'],
+    ['pt-BR', 'pt'],
+    ['zh-TW', 'zh-Hant'],
+    ['zh-CN', 'zh'],
+    ['iw', 'he'],
+  ];
+  for (const [code, expected] of cases) {
+    player = createPlayer({ current: track(code) });
+    const response = await request({ action: 'current' });
+    assert.deepEqual([response.ok, response.language], [true, expected], code);
+  }
+});
+
+test("'current': YouTube の自動翻訳が選ばれていれば、翻訳先の言語を返す", async () => {
+  player = createPlayer({ current: { ...track('en'), translationLanguage: { languageCode: 'fr' } } });
+  assert.equal((await request({ action: 'current' })).language, 'fr');
+});
+
+test("'current': 字幕がオフなら、言語は null", async () => {
+  player = createPlayer({ current: {} });
+  const response = await request({ action: 'current' });
+  assert.deepEqual([response.ok, response.language], [true, null]);
+});

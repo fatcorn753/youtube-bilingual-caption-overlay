@@ -9,7 +9,8 @@
  * 中身は JSON 文字列にする。イベント名は src/youtube.js と揃えること。
  *
  *   要求 'yco:caption-request'  { id, action: 'prefer', languageCode } | { id, action: 'restore', track }
- *   応答 'yco:caption-response' { id, ok, changed?, previous?, reason?, error? }
+ *                               | { id, action: 'current' }
+ *   応答 'yco:caption-response' { id, ok, changed?, previous?, language?, reason?, error? }
  *
  * このファイルは YouTube のページの JavaScript と同じ場所で動くので、グローバルを増やさず、
  * 要求されたこと以外はしない。単体テストは test/page-bridge.test.js。
@@ -64,6 +65,20 @@
     return { ok: true, changed: true, previous: current?.languageCode ? current : null };
   }
 
+  /**
+   * いま表示されている字幕の言語を、Translator API の言語タグで返す(字幕がオフなら null)。
+   * YouTube の自動翻訳が選ばれているときは、翻訳先(translationLanguage)が、表示されている言語
+   */
+  function currentLanguage() {
+    const player = getPlayer();
+    if (typeof player?.getOption !== 'function') return { ok: false, reason: 'no-player' };
+    const track = player.getOption('captions', 'track');
+    const language = trackLanguage(track?.translationLanguage?.languageCode ? track.translationLanguage : track);
+    if (language === 'zh-hant') return { ok: true, language: 'zh-Hant' };
+    // YouTube はヘブライ語を古いコード 'iw' で表す
+    return { ok: true, language: language === 'iw' ? 'he' : language };
+  }
+
   function restoreTrack(track) {
     const player = getPlayer();
     if (typeof player?.setOption !== 'function' || !track?.languageCode) return { ok: false, reason: 'no-track' };
@@ -76,6 +91,7 @@
       return preferLanguage(request.languageCode);
     }
     if (request.action === 'restore') return restoreTrack(request.track);
+    if (request.action === 'current') return currentLanguage();
     return { ok: false, reason: 'unknown-action' };
   }
 

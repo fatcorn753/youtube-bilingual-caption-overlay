@@ -73,6 +73,12 @@
     const cache = new Map();
     let detectorPromise = null;
     let lastLang = null;
+    /**
+     * YouTube が示す、いまの字幕トラックの言語(分からなければ null)。
+     * 判定器が判定できない文(短い文など)の原語に使う。判定器の結果を優先するのは、
+     * 1 つのトラックに 2 つの言語が混ざる字幕があるため
+     */
+    let trackLang = null;
     /** 一度でも訳が出たら、その後の一時的な失敗は表示しない */
     let hasTranslated = false;
     /**
@@ -94,19 +100,22 @@
     /** 字幕の言語コードを返す。判定できなければ null(理由は通知される) */
     async function detectLanguage(text) {
       if (T.KANA.test(text)) return 'ja';
-      // 短い文は判定精度が低いので、直前に確定した言語を使う
-      if (text.length < 12 && lastLang) return lastLang;
+      // 短い文は判定精度が低いので、トラックの言語か、直前に確定した言語を使う
+      const known = trackLang ?? lastLang;
+      if (text.length < 12 && known) return known;
+      let detected = null;
       try {
         if (env.LanguageDetector) {
           detectorPromise ??= withTimeout(env.LanguageDetector.create(), timeouts.createMs, 'LanguageDetector.create');
           const detector = await detectorPromise;
           const [top] = await withTimeout(detector.detect(text), timeouts.translateMs, 'LanguageDetector.detect');
-          if (top && top.confidence >= 0.6) lastLang = top.detectedLanguage;
+          if (top && top.confidence >= 0.6) detected = lastLang = top.detectedLanguage;
         }
       } catch (_) {
         detectorPromise = null;
       }
-      if (lastLang) return lastLang;
+      if (detected) return detected;
+      if (known) return known;
       // 判定手段がなくても、ASCII だけの字幕は、利用者が選んだ字幕の言語として扱う
       if (T.isAscii(text)) return captionLang;
       reportStatus(t('statusNoLang'));
@@ -280,12 +289,18 @@
       captionLang = language;
     }
 
+    /** いまの字幕トラックの言語を知らせる(分からなければ null) */
+    function setTrackLang(language) {
+      trackLang = language || null;
+    }
+
     /** 直前の言語判定を忘れる(別の動画に替わったとき。前の動画の言語を引きずらない) */
     function resetLanguage() {
       lastLang = null;
+      trackLang = null;
     }
 
-    return { translate, prewarm, prewarmAll, begin, retry, resetLanguage, setTargetLang, setCaptionLang };
+    return { translate, prewarm, prewarmAll, begin, retry, resetLanguage, setTargetLang, setCaptionLang, setTrackLang };
   }
 
   YCO.createTranslationService = createTranslationService;

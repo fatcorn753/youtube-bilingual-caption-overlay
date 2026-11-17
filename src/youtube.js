@@ -24,6 +24,11 @@
   const BRIDGE_REQUEST = 'yco:caption-request';
   const BRIDGE_RESPONSE = 'yco:caption-response';
   const BRIDGE_TIMEOUT_MS = 1500;
+  /**
+   * 訳すたびに行う問い合わせの待ち時間。ブリッジは同じページの中で、その場で応答する。
+   * 応答がないとき(ブリッジがない)に、訳を長く待たせない
+   */
+  const BRIDGE_QUICK_TIMEOUT_MS = 100;
 
   /** 自動生成字幕のウィンドウに付く class。手動字幕にはない */
   const ROLLUP_CLASS = 'ytp-caption-window-rollup';
@@ -140,7 +145,7 @@
    * ページ側のブリッジに要求を送り、応答を待つ。応答がなければ null(ブリッジがない・ページが重い)。
    * 中身は JSON 文字列で渡す(world をまたぐと、オブジェクトが渡らないことがある)
    */
-  function callBridge(payload) {
+  function callBridge(payload, timeoutMs = BRIDGE_TIMEOUT_MS) {
     return new Promise((resolve) => {
       const id = Math.random().toString(36).slice(2);
       const finish = (value) => {
@@ -157,7 +162,7 @@
         }
         if (message.id === id) finish(message);
       };
-      const timer = setTimeout(() => finish(null), BRIDGE_TIMEOUT_MS);
+      const timer = setTimeout(() => finish(null), timeoutMs);
       document.addEventListener(BRIDGE_RESPONSE, onResponse);
       document.dispatchEvent(new CustomEvent(BRIDGE_REQUEST, { detail: JSON.stringify({ id, ...payload }) }));
     });
@@ -170,6 +175,15 @@
   async function preferCaptionLanguage(languageCode) {
     const response = await callBridge({ action: 'prefer', languageCode });
     return response?.ok ? response : null;
+  }
+
+  /**
+   * いま表示されている字幕の言語(Translator API の言語タグ)。分からなければ null
+   * @returns {Promise<string|null>}
+   */
+  async function getCaptionLanguage() {
+    const response = await callBridge({ action: 'current' }, BRIDGE_QUICK_TIMEOUT_MS);
+    return (response?.ok && response.language) || null;
   }
 
   /** preferCaptionLanguage() で切り替える前のトラックに戻す */
@@ -307,6 +321,7 @@
     watchCaptions,
     CcSwitch,
     preferCaptionLanguage,
+    getCaptionLanguage,
     restoreCaptionTrack,
     setNativeCaptionsHidden,
     ensureButton,

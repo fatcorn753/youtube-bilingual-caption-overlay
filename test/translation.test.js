@@ -373,3 +373,40 @@ test('prewarmAll(): 選ばれた字幕の言語のモデルを用意する。set
   await service.prewarmAll();
   assert.deepEqual(sources, ['de', 'fr']);
 });
+
+test('setTrackLang(): 短い文は、トラックの言語で訳す(直前の言語より優先)', async () => {
+  const pairs = [];
+  const { service } = createService({ detect: () => 'en', availability: (pair) => (pairs.push(pair.sourceLanguage), 'available') });
+  await service.translate('This is a long English sentence.'); // 直前の言語 = en
+  service.setTrackLang('fr');
+  assert.equal(await service.translate('Ça va?'), '訳:Ça va?');
+  assert.deepEqual(pairs, ['en', 'fr']);
+});
+
+test('setTrackLang(): 判定器が判定できない文は、トラックの言語で訳す', async () => {
+  const pairs = [];
+  const { service, statuses } = createService({
+    withDetector: false,
+    availability: (pair) => (pairs.push(pair.sourceLanguage), 'available'),
+  });
+  service.setTrackLang('ru');
+  assert.equal(await service.translate('Привет, как у тебя дела сегодня?'), '訳:Привет, как у тебя дела сегодня?');
+  assert.deepEqual(pairs, ['ru']);
+  assert.ok(!statuses.includes('statusNoLang'));
+});
+
+test('setTrackLang(): 長い文は、判定器の結果を優先する(1 つのトラックに 2 言語が混ざる字幕)', async () => {
+  const pairs = [];
+  const { service } = createService({ detect: () => 'en', availability: (pair) => (pairs.push(pair.sourceLanguage), 'available') });
+  service.setTrackLang('zh');
+  await service.translate('This is a long English sentence.');
+  assert.deepEqual(pairs, ['en']);
+});
+
+test('resetLanguage(): トラックの言語も忘れる', async () => {
+  const { service, statuses } = createService({ withDetector: false });
+  service.setTrackLang('ru');
+  service.resetLanguage();
+  assert.equal(await service.translate('Привет'), null);
+  assert.ok(statuses.includes('statusNoLang'));
+});

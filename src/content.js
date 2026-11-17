@@ -76,6 +76,8 @@
     translationQueue = translationQueue
       .then(async () => {
         if (!overlay || !slot.isConnected || !settings.showJa) return;
+        // 利用者が途中で字幕のトラックを変えることがあるので、訳すたびに確かめる(ページ内の問い合わせで、軽い)
+        translator.setTrackLang(await youtube.getCaptionLanguage());
         const translation = await translator.translate(line);
         if (translation === null) {
           scheduleTranslationRetry();
