@@ -152,6 +152,23 @@ test('pt-BR のような地域つきのトラックは、言語の部分で選�
   assert.equal(player.state.current.languageCode, 'pt-BR');
 });
 
+test("'prefer': 自動翻訳で別の言語が表示されていれば、指定の言語の元トラックに切り替える", async () => {
+  const translated = { ...track('en'), translationLanguage: { languageCode: 'ja' } };
+  player = createPlayer({ current: translated, tracklist: [track('en')] });
+  const response = await request({ action: 'prefer', languageCode: 'en' });
+  assert.deepEqual([response.ok, response.changed], [true, true]);
+  assert.equal(player.state.current.languageCode, 'en');
+  assert.equal(player.state.current.translationLanguage, undefined);
+  assert.deepEqual(response.previous, translated); // 元に戻すときは自動翻訳ごと戻す
+});
+
+test("'prefer': 自動翻訳の翻訳先がすでに指定の言語なら、切り替えない", async () => {
+  player = createPlayer({ current: { ...track('en'), translationLanguage: { languageCode: 'fr' } }, tracklist: [track('en'), track('fr')] });
+  const response = await request({ action: 'prefer', languageCode: 'fr' });
+  assert.deepEqual([response.ok, response.changed], [true, false]);
+  assert.equal(player.state.set.length, 0);
+});
+
 test("'current': いまの字幕の言語を返す(地域は落とし、繁体字と iw は言語タグを直す)", async () => {
   const cases = [
     ['en-US', 'en'],

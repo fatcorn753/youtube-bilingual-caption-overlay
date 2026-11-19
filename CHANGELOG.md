@@ -2,6 +2,13 @@
 
 All notable changes are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+
+- When YouTube's auto-translation was on (for example English captions translated into Japanese), the overlay did not switch to the caption language you chose, because only the original track's language was checked.
+- The privacy policy now lists every stored setting (translation language, caption language and the option to translate unfinished sentences were missing).
+
 ## [2.4.0] - 2026-11-17
 
 ### Added

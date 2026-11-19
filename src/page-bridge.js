@@ -47,14 +47,17 @@
     if (typeof player?.getOption !== 'function') return { ok: false, reason: 'no-player' };
 
     const current = player.getOption('captions', 'track');
-    if (matchesLanguage(current, languageCode)) return { ok: true, changed: false };
+    // YouTube の自動翻訳が選ばれているときは、表示されているのは翻訳先の言語。
+    // 元のトラックの言語だけで判定すると、英語→日本語の自動翻訳を「英語の字幕」とみなして切り替えなくなる
+    const shown = current?.translationLanguage?.languageCode ? current.translationLanguage : current;
+    if (matchesLanguage(shown, languageCode)) return { ok: true, changed: false };
 
     const tracklist = player.getOption('captions', 'tracklist') || [];
     let candidates = tracklist.filter((track) => matchesLanguage(track, languageCode));
     if (!candidates.length) {
       // 中国語は、選んだ字体のトラックがなければ、もう一方の字体でもよい(字幕がないよりよい)
       const sameBase = (track) => trackLanguage(track)?.split('-')[0] === languageCode.toLowerCase().split('-')[0];
-      if (sameBase(current)) return { ok: true, changed: false };
+      if (sameBase(shown)) return { ok: true, changed: false };
       candidates = tracklist.filter(sameBase);
     }
     const target = candidates.find((track) => track.kind !== 'asr') || candidates[0];
